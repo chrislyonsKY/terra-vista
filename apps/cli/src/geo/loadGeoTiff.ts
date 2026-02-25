@@ -20,8 +20,10 @@ export async function loadGeoTiff(filePath: string): Promise<GeoTiffData> {
   const width = image.getWidth();
   const height = image.getHeight();
   const bandCount = image.getSamplesPerPixel();
-  const bitsPerSample = image.getBitsPerSample() as number[];
-  const sampleFormat = (image.getSampleFormat?.() as number[]) ?? [1];
+  const rawBits = image.getBitsPerSample();
+  const bitsPerSample = Array.isArray(rawBits) ? rawBits as number[] : [rawBits as number];
+  const rawFormat = image.getSampleFormat?.();
+  const sampleFormat = Array.isArray(rawFormat) ? rawFormat as number[] : [rawFormat as number ?? 1];
   const fileDirectory = image.fileDirectory;
   const noDataValue = fileDirectory.GDAL_NODATA != null
     ? parseFloat(fileDirectory.GDAL_NODATA)

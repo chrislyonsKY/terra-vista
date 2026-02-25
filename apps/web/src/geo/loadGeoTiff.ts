@@ -16,8 +16,10 @@ export async function loadGeoTiffFromFile(
   const width = image.getWidth();
   const height = image.getHeight();
   const samplesPerPixel = image.getSamplesPerPixel();
-  const bitsPerSample = image.getBitsPerSample() as number[];
-  const sampleFormat = (image.getSampleFormat?.() as number[]) ?? [1];
+  const rawBits = image.getBitsPerSample();
+  const bitsPerSample = Array.isArray(rawBits) ? rawBits as number[] : [rawBits as number];
+  const rawFormat = image.getSampleFormat?.();
+  const sampleFormat = Array.isArray(rawFormat) ? rawFormat as number[] : [rawFormat as number ?? 1];
 
   const tiepoint = image.getTiePoints();
   const fileDir = image.getFileDirectory();

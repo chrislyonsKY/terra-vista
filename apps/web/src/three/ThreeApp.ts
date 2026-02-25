@@ -12,7 +12,7 @@ export class ThreeApp {
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
   private controls: OrbitControls;
-  private clock: THREE.Clock;
+  private timer: THREE.Timer;
   private modules: SceneModule[] = [];
   private animationFrameId: number | null = null;
   private boundResize: () => void;
@@ -39,7 +39,7 @@ export class ThreeApp {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.1;
 
-    this.clock = new THREE.Clock();
+    this.timer = new THREE.Timer();
 
     this.boundResize = this.onResize.bind(this);
     window.addEventListener("resize", this.boundResize);
@@ -72,7 +72,6 @@ export class ThreeApp {
   }
 
   start(): void {
-    this.clock.start();
     this.animate();
   }
 
@@ -119,7 +118,8 @@ export class ThreeApp {
 
   private animate(): void {
     this.animationFrameId = requestAnimationFrame(() => this.animate());
-    const delta = this.clock.getDelta();
+    this.timer.update();
+    const delta = this.timer.getDelta();
     this.controls.update();
     for (const mod of this.modules) {
       mod.update(delta);
