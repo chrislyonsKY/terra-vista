@@ -10,11 +10,14 @@
     "skipLibCheck": true,
     "declaration": true,
     "sourceMap": true,
-    "lib": ["ES2020"]
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true,
+    "lib": ["ES2020"],
+    "types": ["node"]
   },
+  "include": ["src"],
   "references": [
-    { "path": "packages/shared" },
-    { "path": "apps/web" },
-    { "path": "apps/cli" }
+    { "path": "../../packages/shared" }
   ]
 }

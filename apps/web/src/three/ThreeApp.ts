@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 export interface SceneModule {
   init(scene: THREE.Scene, camera: THREE.PerspectiveCamera): void;
@@ -10,9 +11,11 @@ export class ThreeApp {
   private renderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
+  private controls: OrbitControls;
   private clock: THREE.Clock;
   private modules: SceneModule[] = [];
   private animationFrameId: number | null = null;
+  private boundResize: () => void;
 
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
@@ -22,9 +25,9 @@ export class ThreeApp {
       60,
       container.clientWidth / container.clientHeight,
       0.1,
-      1000
+      10000
     );
-    this.camera.position.set(0, 5, 10);
+    this.camera.position.set(0, 50, 80);
     this.camera.lookAt(0, 0, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -32,15 +35,40 @@ export class ThreeApp {
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     container.appendChild(this.renderer.domElement);
 
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.1;
+
     this.clock = new THREE.Clock();
 
-    window.addEventListener("resize", this.onResize.bind(this));
+    this.boundResize = this.onResize.bind(this);
+    window.addEventListener("resize", this.boundResize);
     this.onResize();
+  }
+
+  getScene(): THREE.Scene {
+    return this.scene;
+  }
+
+  getCamera(): THREE.PerspectiveCamera {
+    return this.camera;
+  }
+
+  getControls(): OrbitControls {
+    return this.controls;
   }
 
   addModule(mod: SceneModule): void {
     mod.init(this.scene, this.camera);
     this.modules.push(mod);
+  }
+
+  removeModule(mod: SceneModule): void {
+    const idx = this.modules.indexOf(mod);
+    if (idx !== -1) {
+      mod.dispose();
+      this.modules.splice(idx, 1);
+    }
   }
 
   start(): void {
@@ -61,13 +89,38 @@ export class ThreeApp {
       mod.dispose();
     }
     this.modules = [];
+    this.controls.dispose();
     this.renderer.dispose();
-    window.removeEventListener("resize", this.onResize.bind(this));
+    window.removeEventListener("resize", this.boundResize);
+  }
+
+  fitToExtent(
+    minX: number,
+    minY: number,
+    maxX: number,
+    maxY: number,
+    elevationScale: number
+  ): void {
+    const cx = (minX + maxX) / 2;
+    const cz = (minY + maxY) / 2;
+    const dx = maxX - minX;
+    const dz = maxY - minY;
+    const maxDim = Math.max(dx, dz);
+    const dist = maxDim * 1.2;
+
+    this.camera.position.set(
+      cx + dist * 0.5,
+      dist * 0.6 * elevationScale,
+      cz + dist * 0.5
+    );
+    this.controls.target.set(cx, 0, cz);
+    this.controls.update();
   }
 
   private animate(): void {
     this.animationFrameId = requestAnimationFrame(() => this.animate());
     const delta = this.clock.getDelta();
+    this.controls.update();
     for (const mod of this.modules) {
       mod.update(delta);
     }

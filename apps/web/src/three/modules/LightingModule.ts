@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { SceneModule } from "@/ThreeApp";
+import type { SceneModule } from "../ThreeApp";
 
 export class LightingModule implements SceneModule {
   private ambientLight: THREE.AmbientLight | null = null;

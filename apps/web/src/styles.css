@@ -1,0 +1,241 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #0f0f1a;
+  color: #e0e0f0;
+}
+
+.app-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.sidebar {
+  width: 360px;
+  min-width: 360px;
+  height: 100%;
+  background: #16162a;
+  border-right: 1px solid #2a2a4a;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #2a2a4a;
+  background: #1a1a32;
+}
+
+.sidebar-header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #a0a0ff;
+  margin-bottom: 4px;
+}
+
+.sidebar-header p {
+  font-size: 12px;
+  color: #7070a0;
+}
+
+.sidebar-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid #2a2a4a;
+}
+
+.sidebar-section h2 {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8080b0;
+  margin-bottom: 12px;
+}
+
+.viewport {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.file-upload {
+  border: 2px dashed #3a3a6a;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.file-upload:hover {
+  border-color: #6060a0;
+  background: #1e1e38;
+}
+
+.file-upload.dragging {
+  border-color: #8080ff;
+  background: #202040;
+}
+
+.file-upload-label {
+  font-size: 14px;
+  color: #9090c0;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.file-upload-hint {
+  font-size: 11px;
+  color: #5050a0;
+}
+
+.file-upload input[type="file"] {
+  display: none;
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.metadata-item {
+  background: #1e1e38;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.metadata-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.metadata-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6060a0;
+  margin-bottom: 2px;
+}
+
+.metadata-value {
+  font-size: 13px;
+  color: #c0c0f0;
+  font-family: "SF Mono", "Fira Code", monospace;
+  word-break: break-all;
+}
+
+.qa-results {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.qa-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #1e1e38;
+}
+
+.qa-badge {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.qa-badge.pass {
+  background: #40c080;
+}
+
+.qa-badge.fail-error {
+  background: #e05050;
+}
+
+.qa-badge.fail-warning {
+  background: #e0a030;
+}
+
+.qa-message {
+  font-size: 12px;
+  color: #b0b0d0;
+  flex: 1;
+}
+
+.qa-check-id {
+  font-size: 10px;
+  color: #6060a0;
+  font-family: monospace;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary {
+  background: #4040a0;
+  color: #e0e0ff;
+}
+
+.btn-primary:hover {
+  background: #5050b0;
+}
+
+.btn-primary:disabled {
+  background: #2a2a50;
+  color: #5050a0;
+  cursor: not-allowed;
+}
+
+.export-section {
+  display: flex;
+  gap: 8px;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 15, 26, 0.8);
+  z-index: 10;
+}
+
+.loading-spinner {
+  font-size: 14px;
+  color: #a0a0ff;
+}
+
+.empty-state {
+  padding: 20px;
+  text-align: center;
+  color: #5050a0;
+  font-size: 13px;
+}
