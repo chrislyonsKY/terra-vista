@@ -1,25 +1,28 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { ThreeApp } from "../three/ThreeApp";
 import { GridModule } from "../three/modules/GridModule";
 import { LightingModule } from "../three/modules/LightingModule";
 import { TerrainModule } from "../three/modules/TerrainModule";
-import type { TerrainData } from "../three/modules/TerrainModule";
-import type { Extent } from "@mapqc/shared";
+import type { TerrainData, ColorRampName } from "../three/modules/TerrainModule";
 
 interface ViewportProps {
-  terrainData: {
-    elevations: Float32Array;
-    width: number;
-    height: number;
-    extent: Extent;
-    noDataValue: number | null;
-  } | null;
+  terrainData: TerrainData | null;
+  exaggeration: number;
+  colorRamp: ColorRampName;
+  wireframe: boolean;
+  onElevationRange?: (min: number, max: number) => void;
 }
 
-export function Viewport({ terrainData }: ViewportProps) {
+export function Viewport({
+  terrainData,
+  exaggeration,
+  colorRamp,
+  wireframe,
+  onElevationRange,
+}: ViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<ThreeApp | null>(null);
-  const terrainModuleRef = useRef<TerrainModule | null>(null);
+  const terrainRef = useRef<TerrainModule | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -30,7 +33,7 @@ export function Viewport({ terrainData }: ViewportProps) {
 
     const terrain = new TerrainModule();
     app.addModule(terrain);
-    terrainModuleRef.current = terrain;
+    terrainRef.current = terrain;
 
     app.start();
     appRef.current = app;
@@ -38,31 +41,42 @@ export function Viewport({ terrainData }: ViewportProps) {
     return () => {
       app.dispose();
       appRef.current = null;
-      terrainModuleRef.current = null;
+      terrainRef.current = null;
     };
   }, []);
 
   useEffect(() => {
-    if (!terrainData || !terrainModuleRef.current || !appRef.current) return;
+    if (!terrainData || !terrainRef.current || !appRef.current) return;
 
-    const td: TerrainData = {
-      elevations: terrainData.elevations,
-      width: terrainData.width,
-      height: terrainData.height,
-      extent: terrainData.extent,
-      noDataValue: terrainData.noDataValue,
-    };
+    terrainRef.current.loadTerrain(terrainData);
 
-    terrainModuleRef.current.loadTerrain(td);
+    const { min, max } = terrainRef.current.getElevationRange();
+    onElevationRange?.(min, max);
 
-    appRef.current.fitToExtent(
-      terrainData.extent.minX,
-      terrainData.extent.minY,
-      terrainData.extent.maxX,
-      terrainData.extent.maxY,
-      1
-    );
-  }, [terrainData]);
+    appRef.current.resetCamera();
+  }, [terrainData, onElevationRange]);
 
-  return <div ref={containerRef} className="viewport" />;
+  useEffect(() => {
+    terrainRef.current?.setExaggeration(exaggeration);
+  }, [exaggeration]);
+
+  useEffect(() => {
+    terrainRef.current?.setColorRamp(colorRamp);
+  }, [colorRamp]);
+
+  useEffect(() => {
+    terrainRef.current?.setWireframe(wireframe);
+  }, [wireframe]);
+
+  const handleReset = useCallback(() => {
+    appRef.current?.resetCamera();
+  }, []);
+
+  return (
+    <div ref={containerRef} className="viewport">
+      <button className="reset-camera-btn" onClick={handleReset} title="Reset camera">
+        Reset View
+      </button>
+    </div>
+  );
 }

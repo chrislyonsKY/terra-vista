@@ -93,26 +93,9 @@ export class ThreeApp {
     window.removeEventListener("resize", this.boundResize);
   }
 
-  fitToExtent(
-    minX: number,
-    minY: number,
-    maxX: number,
-    maxY: number,
-    elevationScale: number
-  ): void {
-    const cx = (minX + maxX) / 2;
-    const cz = (minY + maxY) / 2;
-    const dx = maxX - minX;
-    const dz = maxY - minY;
-    const maxDim = Math.max(dx, dz);
-    const dist = maxDim * 1.2;
-
-    this.camera.position.set(
-      cx + dist * 0.5,
-      dist * 0.6 * elevationScale,
-      cz + dist * 0.5
-    );
-    this.controls.target.set(cx, 0, cz);
+  resetCamera(): void {
+    this.camera.position.set(120, 100, 160);
+    this.controls.target.set(0, 0, 0);
     this.controls.update();
   }
 

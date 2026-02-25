@@ -3,14 +3,11 @@ import type { SceneModule } from "../ThreeApp";
 
 export class GridModule implements SceneModule {
   private gridHelper: THREE.GridHelper | null = null;
-  private axesHelper: THREE.AxesHelper | null = null;
 
   init(scene: THREE.Scene, _camera: THREE.PerspectiveCamera): void {
-    this.gridHelper = new THREE.GridHelper(100, 50, 0x444466, 0x333355);
+    this.gridHelper = new THREE.GridHelper(400, 40, 0x222244, 0x181830);
+    this.gridHelper.position.y = -0.5;
     scene.add(this.gridHelper);
-
-    this.axesHelper = new THREE.AxesHelper(10);
-    scene.add(this.axesHelper);
   }
 
   update(_delta: number): void {}
@@ -21,12 +18,6 @@ export class GridModule implements SceneModule {
       (this.gridHelper.material as THREE.Material).dispose();
       this.gridHelper.removeFromParent();
       this.gridHelper = null;
-    }
-    if (this.axesHelper) {
-      this.axesHelper.geometry.dispose();
-      (this.axesHelper.material as THREE.Material).dispose();
-      this.axesHelper.removeFromParent();
-      this.axesHelper = null;
     }
   }
 }

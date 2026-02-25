@@ -1,14 +1,25 @@
 import { fromArrayBuffer } from "geotiff";
-import type { GeoTiffMetadata, Extent, PixelSize } from "@mapqc/shared";
+import type { TerrainData } from "../three/modules/TerrainModule";
 
-export interface GeoTiffLoadResult {
-  metadata: GeoTiffMetadata;
-  elevations: Float32Array;
+export interface GeoTiffInfo {
+  width: number;
+  height: number;
+  bandCount: number;
+  bitsPerSample: number[];
+  pixelSizeX: number;
+  pixelSizeY: number;
+  crs: string | null;
+  noDataValue: number | null;
+  originX: number;
+  originY: number;
 }
 
-export async function loadGeoTiffFromFile(
-  file: File
-): Promise<GeoTiffLoadResult> {
+export interface LoadResult {
+  terrain: TerrainData;
+  info: GeoTiffInfo;
+}
+
+export async function loadGeoTiffFromFile(file: File): Promise<LoadResult> {
   const buffer = await file.arrayBuffer();
   const tiff = await fromArrayBuffer(buffer);
   const image = await tiff.getImage();
@@ -16,10 +27,11 @@ export async function loadGeoTiffFromFile(
   const width = image.getWidth();
   const height = image.getHeight();
   const samplesPerPixel = image.getSamplesPerPixel();
+
   const rawBits = image.getBitsPerSample();
-  const bitsPerSample = Array.isArray(rawBits) ? rawBits as number[] : [rawBits as number];
-  const rawFormat = image.getSampleFormat?.();
-  const sampleFormat = Array.isArray(rawFormat) ? rawFormat as number[] : [rawFormat as number ?? 1];
+  const bitsPerSample = Array.isArray(rawBits)
+    ? (rawBits as number[])
+    : [rawBits as number];
 
   const tiepoint = image.getTiePoints();
   const fileDir = image.getFileDirectory();
@@ -51,14 +63,6 @@ export async function loadGeoTiffFromFile(
     crs = `EPSG:${geoKeys.GeographicTypeGeoKey}`;
   }
 
-  const pixelSize: PixelSize = { x: pixelSizeX, y: pixelSizeY };
-  const extent: Extent = {
-    minX: originX,
-    maxY: originY,
-    maxX: originX + width * pixelSizeX,
-    minY: originY - height * pixelSizeY,
-  };
-
   const rasters = await image.readRasters();
   const firstBand = rasters[0] as ArrayLike<number>;
   const elevations = new Float32Array(firstBand.length);
@@ -66,18 +70,25 @@ export async function loadGeoTiffFromFile(
     elevations[i] = firstBand[i];
   }
 
-  const metadata: GeoTiffMetadata = {
+  const terrain: TerrainData = {
+    elevations,
+    width,
+    height,
+    noDataValue,
+  };
+
+  const info: GeoTiffInfo = {
     width,
     height,
     bandCount: samplesPerPixel,
     bitsPerSample,
-    sampleFormat,
-    noDataValue,
-    origin: [originX, originY],
-    pixelSize,
-    extent,
+    pixelSizeX,
+    pixelSizeY,
     crs,
+    noDataValue,
+    originX,
+    originY,
   };
 
-  return { metadata, elevations };
+  return { terrain, info };
 }
