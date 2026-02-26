@@ -171,6 +171,10 @@ html, body, #root {
   padding: 10px 12px;
 }
 
+.info-item.full-width {
+  grid-column: 1 / -1;
+}
+
 .info-label {
   font-size: 10px;
   text-transform: uppercase;

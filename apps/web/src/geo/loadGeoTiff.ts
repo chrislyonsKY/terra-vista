@@ -1,23 +1,6 @@
 import { fromArrayBuffer } from "geotiff";
 import type { TerrainData } from "../three/modules/TerrainModule";
-
-export interface GeoTiffInfo {
-  width: number;
-  height: number;
-  bandCount: number;
-  bitsPerSample: number[];
-  pixelSizeX: number;
-  pixelSizeY: number;
-  crs: string | null;
-  noDataValue: number | null;
-  originX: number;
-  originY: number;
-}
-
-export interface LoadResult {
-  terrain: TerrainData;
-  info: GeoTiffInfo;
-}
+import type { RasterInfo, LoadResult } from "./loader";
 
 export async function loadGeoTiffFromFile(file: File): Promise<LoadResult> {
   const buffer = await file.arrayBuffer();
@@ -77,7 +60,12 @@ export async function loadGeoTiffFromFile(file: File): Promise<LoadResult> {
     noDataValue,
   };
 
-  const info: GeoTiffInfo = {
+  const ext = file.name.toLowerCase().split(".").pop() ?? "";
+  let formatName = "GeoTIFF";
+  if (ext === "cog") formatName = "Cloud Optimized GeoTIFF";
+  else if (ext === "img") formatName = "ERDAS Imagine";
+
+  const info: RasterInfo = {
     width,
     height,
     bandCount: samplesPerPixel,
@@ -88,6 +76,7 @@ export async function loadGeoTiffFromFile(file: File): Promise<LoadResult> {
     noDataValue,
     originX,
     originY,
+    format: formatName,
   };
 
   return { terrain, info };

@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import type { GeoTiffInfo } from "../geo/loadGeoTiff";
+import type { RasterInfo } from "../geo/loader";
 
 interface LeafletMapProps {
-  info: GeoTiffInfo | null;
+  info: RasterInfo | null;
 }
 
-function computeGeoBounds(info: GeoTiffInfo): L.LatLngBoundsExpression | null {
+function computeGeoBounds(info: RasterInfo): L.LatLngBoundsExpression | null {
   const x1 = info.originX;
   const y1 = info.originY;
   const x2 = info.originX + info.width * info.pixelSizeX;

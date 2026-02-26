@@ -1,35 +1,67 @@
 import { useState, useRef, useCallback } from "react";
+import { ALL_EXTENSIONS, ACCEPT_STRING, detectFormat } from "../geo/formats";
 
 interface FileUploadProps {
-  onFileSelected: (file: File) => void;
+  onFileSelected: (file: File, companionFile?: File) => void;
   disabled: boolean;
 }
+
+const WORLD_FILE_EXTS = [".jgw", ".pgw", ".bpw", ".gfw", ".tfw", ".wld"];
 
 export function FileUpload({ onFileSelected, disabled }: FileUploadProps) {
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const isAcceptedFile = useCallback((name: string): boolean => {
+    const lower = name.toLowerCase();
+    return ALL_EXTENSIONS.some((ext) => lower.endsWith(ext)) ||
+      WORLD_FILE_EXTS.some((ext) => lower.endsWith(ext));
+  }, []);
+
+  const handleFiles = useCallback(
+    (files: FileList | File[]) => {
+      if (disabled) return;
+      const fileArr = Array.from(files);
+
+      const mainFile = fileArr.find((f) => {
+        const lower = f.name.toLowerCase();
+        return !WORLD_FILE_EXTS.some((ext) => lower.endsWith(ext));
+      });
+
+      const worldFile = fileArr.find((f) => {
+        const lower = f.name.toLowerCase();
+        return WORLD_FILE_EXTS.some((ext) => lower.endsWith(ext));
+      });
+
+      if (mainFile) {
+        onFileSelected(mainFile, worldFile);
+      }
+    },
+    [onFileSelected, disabled]
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragging(false);
       if (disabled) return;
-      const file = e.dataTransfer.files[0];
-      if (file && (file.name.endsWith(".tif") || file.name.endsWith(".tiff"))) {
-        onFileSelected(file);
+
+      const files = Array.from(e.dataTransfer.files).filter((f) => isAcceptedFile(f.name));
+      if (files.length > 0) {
+        handleFiles(files);
       }
     },
-    [onFileSelected, disabled]
+    [handleFiles, disabled, isAcceptedFile]
   );
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        onFileSelected(file);
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        handleFiles(files);
       }
     },
-    [onFileSelected]
+    [handleFiles]
   );
 
   const handleClick = useCallback(() => {
@@ -50,15 +82,18 @@ export function FileUpload({ onFileSelected, disabled }: FileUploadProps) {
       onClick={handleClick}
     >
       <span className="file-upload-label">
-        Drop a GeoTIFF here or click to browse
+        Drop a raster file here or click to browse
       </span>
-      <span className="file-upload-hint">.tif / .tiff files supported</span>
+      <span className="file-upload-hint">
+        GeoTIFF, DEM, DTED, XYZ, NetCDF, IMG, and more
+      </span>
       <input
         ref={inputRef}
         type="file"
-        accept=".tif,.tiff"
+        accept={ACCEPT_STRING}
         onChange={handleChange}
         disabled={disabled}
+        multiple
       />
     </div>
   );

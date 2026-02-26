@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
-import { loadGeoTiffFromFile } from "./geo/loadGeoTiff";
-import type { GeoTiffInfo } from "./geo/loadGeoTiff";
+import { loadRasterFile } from "./geo/loader";
+import type { RasterInfo } from "./geo/loader";
 import type { TerrainData, ColorRampName } from "./three/modules/TerrainModule";
 import { FileUpload } from "./components/FileUpload";
 import { Viewport } from "./components/Viewport";
@@ -17,7 +17,7 @@ const RAMP_OPTIONS: { value: ColorRampName; label: string }[] = [
 
 export function App() {
   const [terrainData, setTerrainData] = useState<TerrainData | null>(null);
-  const [info, setInfo] = useState<GeoTiffInfo | null>(null);
+  const [info, setInfo] = useState<RasterInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,17 +27,22 @@ export function App() {
   const [wireframe, setWireframe] = useState(false);
   const [elevRange, setElevRange] = useState<{ min: number; max: number } | null>(null);
 
-  const handleFileSelected = useCallback(async (file: File) => {
+  const handleFileSelected = useCallback(async (file: File, companionFile?: File) => {
     setLoading(true);
     setError(null);
     setFileName(file.name);
 
     try {
-      const result = await loadGeoTiffFromFile(file);
+      let worldFileContent: string | undefined;
+      if (companionFile) {
+        worldFileContent = await companionFile.text();
+      }
+
+      const result = await loadRasterFile(file, worldFileContent);
       setTerrainData(result.terrain);
       setInfo(result.info);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load GeoTIFF";
+      const message = err instanceof Error ? err.message : "Failed to load file";
       setError(message);
       setTerrainData(null);
       setInfo(null);
@@ -72,6 +77,10 @@ export function App() {
           <div className="sidebar-section">
             <h2>File Info</h2>
             <div className="info-grid">
+              <div className="info-item full-width">
+                <span className="info-label">Format</span>
+                <span className="info-value">{info.format}</span>
+              </div>
               <div className="info-item">
                 <span className="info-label">Dimensions</span>
                 <span className="info-value">{info.width} x {info.height}</span>
@@ -153,8 +162,7 @@ export function App() {
 
         {!terrainData && !loading && (
           <div className="empty-state">
-            Drop a GeoTIFF elevation file to explore terrain in 3D.
-            Try USGS 1/3 arc-second DEMs for best results.
+            Drop a raster elevation file to explore terrain in 3D. Supports GeoTIFF, USGS DEM, DTED, ASCII XYZ, NetCDF, ERDAS Imagine, and image + world file pairs.
           </div>
         )}
       </aside>
