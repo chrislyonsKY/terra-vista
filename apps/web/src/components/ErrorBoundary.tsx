@@ -37,16 +37,16 @@ export class ErrorBoundary extends Component<Props, State> {
             alignItems: "center",
             justifyContent: "center",
             height: "100%",
-            background: "#111111",
-            color: "#ef4444",
+            background: "#2b2b2b",
+            color: "#e07040",
             fontSize: 14,
             padding: 20,
             textAlign: "center",
           }}
         >
           <div>
-            <div style={{ marginBottom: 8 }}>WebGL is not available</div>
-            <div style={{ color: "#737373", fontSize: 12 }}>
+            <div style={{ marginBottom: 8, fontWeight: 600 }}>WebGL is not available</div>
+            <div style={{ color: "#aaaaaa", fontSize: 12 }}>
               {this.state.error?.message}
             </div>
           </div>

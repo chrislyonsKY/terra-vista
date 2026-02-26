@@ -15,7 +15,7 @@ Interactive 3D terrain visualizer that loads GeoTIFF elevation files and renders
 - **CLI Framework**: Commander
 - **Dev Server**: port 5000 (Vite, bound to 0.0.0.0)
 - **Monorepo**: npm workspaces
-- **Theme**: Dark neutral with green/teal accents (#10b981)
+- **Theme**: Professional GIS (light sidebar, ArcGIS-blue accents #007ac2, dark 3D viewport)
 
 ## Project Structure
 
@@ -100,7 +100,7 @@ The web app is a 3D terrain explorer. Key features:
 - **Terrain stats**: Pixel count, relief, pixel size
 - **Export**: Screenshot PNG, Metadata JSON report, Elevation CSV
 - Up to 800-segment mesh resolution, 1024px texture
-- **LAS/LAZ**: Point clouds gridded to DEM via spatial binning + neighbor interpolation. LAZ decompressed via laz-perf (WASM). Up to 10M points sampled.
+- **LAS/LAZ**: Point clouds gridded to DEM via spatial binning + neighbor interpolation. LAZ decompressed via laz-perf (WASM with locateFile override to /laz-perf.wasm in public/). Up to 10M points sampled.
 - **3D rendering**: ACES tone mapping, fog, enhanced multi-directional lighting, preserveDrawingBuffer for screenshots
 
 ### Key Technical Details
@@ -108,6 +108,8 @@ The web app is a 3D terrain explorer. Key features:
 - **geotiff.js quirk**: `getBitsPerSample()` returns a plain number (not array) for single-band files. Loader normalizes with `Array.isArray()` check.
 - **Three.js v0.183**: Uses `THREE.Timer` (not deprecated `THREE.Clock`). Timer requires explicit `.update()` call each frame.
 - **Vite cache**: Clear `apps/web/node_modules/.vite` if stale imports cause crashes.
+- **laz-perf WASM**: The WASM file is copied to `apps/web/public/laz-perf.wasm` and loaded via `locateFile` override. `optimizeDeps.include` is used (not exclude) so Vite pre-bundles the JS.
+- **Elevation exaggeration**: Base height scale is `sceneSize * 0.1 * exaggeration`. Default exaggeration is 1.0x. Slider range 0.1–5x.
 - **@mapqc/shared alias**: Resolved in vite.config.ts via `resolve.alias` pointing to `packages/shared/src`.
 
 ### ThreeApp (apps/web/src/three/ThreeApp.ts)

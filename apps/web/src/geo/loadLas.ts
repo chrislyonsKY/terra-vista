@@ -117,9 +117,25 @@ function extractPointsUncompressed(buffer: ArrayBuffer, header: LasHeader): { xs
   };
 }
 
+async function initLazPerf(): Promise<any> {
+  const mod = await import("laz-perf");
+  const factory = mod.createLazPerf || mod.create || mod.default || (mod.LazPerf && mod.LazPerf.create);
+  if (typeof factory !== "function") {
+    throw new Error("Could not find laz-perf factory function");
+  }
+  const lp = await factory({
+    locateFile: (file: string) => {
+      if (file.endsWith(".wasm")) {
+        return "/laz-perf.wasm";
+      }
+      return file;
+    },
+  });
+  return lp;
+}
+
 async function extractPointsLaz(buffer: ArrayBuffer, header: LasHeader): Promise<{ xs: Float64Array; ys: Float64Array; zs: Float64Array }> {
-  const { LazPerf } = await import("laz-perf");
-  const lp = await LazPerf.create();
+  const lp = await initLazPerf();
 
   const fileData = new Uint8Array(buffer);
   const dataPtr = lp._malloc(fileData.byteLength);

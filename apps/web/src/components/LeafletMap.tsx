@@ -84,6 +84,8 @@ export function LeafletMap({ info, fileName, basemap }: LeafletMapProps) {
     }
   }, []);
 
+  const initialBasemapRef = useRef(basemap);
+
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -99,9 +101,10 @@ export function LeafletMap({ info, fileName, basemap }: LeafletMapProps) {
     layerGroupRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
-    applyBasemap(map, basemap);
-
-    setTimeout(() => map.invalidateSize(), 100);
+    setTimeout(() => {
+      map.invalidateSize();
+      applyBasemap(map, initialBasemapRef.current);
+    }, 50);
 
     return () => {
       map.remove();
@@ -109,10 +112,10 @@ export function LeafletMap({ info, fileName, basemap }: LeafletMapProps) {
       layerGroupRef.current = null;
       basemapLayerRef.current = null;
     };
-  }, []);
+  }, [applyBasemap]);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !basemapLayerRef.current) return;
     applyBasemap(mapRef.current, basemap);
   }, [basemap, applyBasemap]);
 
@@ -139,10 +142,10 @@ export function LeafletMap({ info, fileName, basemap }: LeafletMapProps) {
     const latLngBounds = L.latLngBounds(bounds as L.LatLngExpression[]);
 
     L.rectangle(bounds, {
-      color: "#10b981",
+      color: "#007ac2",
       weight: 3,
-      fillColor: "#10b981",
-      fillOpacity: 0.2,
+      fillColor: "#007ac2",
+      fillOpacity: 0.15,
       dashArray: undefined,
     }).addTo(layerGroupRef.current);
 
@@ -155,9 +158,9 @@ export function LeafletMap({ info, fileName, basemap }: LeafletMapProps) {
     for (const corner of corners) {
       L.circleMarker(corner, {
         radius: 4,
-        color: "#10b981",
+        color: "#007ac2",
         weight: 2,
-        fillColor: "#0d9668",
+        fillColor: "#005a8e",
         fillOpacity: 1,
       }).addTo(layerGroupRef.current);
     }

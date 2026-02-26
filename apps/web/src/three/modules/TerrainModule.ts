@@ -106,7 +106,7 @@ export class TerrainModule implements SceneModule {
     const vertCountX = segW + 1;
     const vertCountZ = segH + 1;
 
-    const heightScale = (this.sceneSize * 0.25) * this.exaggeration;
+    const heightScale = (this.sceneSize * 0.1) * this.exaggeration;
 
     for (let iz = 0; iz < vertCountZ; iz++) {
       for (let ix = 0; ix < vertCountX; ix++) {

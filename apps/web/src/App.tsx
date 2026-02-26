@@ -50,7 +50,7 @@ export function App() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [exaggeration, setExaggeration] = useState(1.5);
+  const [exaggeration, setExaggeration] = useState(1.0);
   const [colorRamp, setColorRamp] = useState<ColorRampName>("terrain");
   const [wireframe, setWireframe] = useState(false);
   const [elevRange, setElevRange] = useState<{ min: number; max: number } | null>(null);

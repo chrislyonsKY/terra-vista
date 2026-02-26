@@ -23,7 +23,7 @@ export default defineConfig({
     "import.meta.env.VITE_ARCGIS_API_KEY": JSON.stringify(process.env.ARCGIS_API_KEY ?? ""),
   },
   optimizeDeps: {
-    exclude: ["laz-perf"],
+    include: ["laz-perf"],
   },
   build: {
     outDir: "dist",
