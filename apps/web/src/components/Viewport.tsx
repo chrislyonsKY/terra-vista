@@ -246,12 +246,15 @@ export const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewp
       ref={containerRef}
       className={`viewport ${profileMode ? "profile-active" : ""}`}
       onClick={handleCanvasClick}
+      role="application"
+      aria-label="3D Terrain Viewport"
+      tabIndex={0}
     >
-      <button className="reset-camera-btn" onClick={handleReset} title="Reset camera">
+      <button className="reset-camera-btn" onClick={handleReset} title="Reset camera" aria-label="Reset camera to default view">
         Reset View
       </button>
       {profileMode && (
-        <div className="profile-mode-indicator">Click two points on terrain for profile</div>
+        <div className="profile-mode-indicator" role="status" aria-live="polite">Click two points on terrain for profile</div>
       )}
     </div>
   );

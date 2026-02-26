@@ -80,11 +80,15 @@ export function FileUpload({ onFileSelected, disabled }: FileUploadProps) {
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
       onClick={handleClick}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
+      role="button"
+      tabIndex={0}
+      aria-label="Upload a raster elevation file. Drop a file here or press Enter to browse."
     >
-      <span className="file-upload-label">
+      <span className="file-upload-label" aria-hidden="true">
         Drop a raster file here or click to browse
       </span>
-      <span className="file-upload-hint">
+      <span className="file-upload-hint" aria-hidden="true">
         GeoTIFF, DEM, DTED, XYZ, NetCDF, LAS, IMG, and more
       </span>
       <input
@@ -94,6 +98,7 @@ export function FileUpload({ onFileSelected, disabled }: FileUploadProps) {
         onChange={handleChange}
         disabled={disabled}
         multiple
+        aria-label="Choose raster elevation file"
       />
     </div>
   );

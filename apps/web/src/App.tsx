@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { loadRasterFile } from "./geo/loader";
-import type { RasterInfo } from "./geo/loader";
+import type { RasterInfo, LoadResult } from "./geo/loader";
 import type { TerrainData, ColorRampName } from "./three/modules/TerrainModule";
 import { FileUpload } from "./components/FileUpload";
 import { Viewport } from "./components/Viewport";
@@ -8,6 +8,7 @@ import type { ViewportHandle } from "./components/Viewport";
 import { LeafletMap } from "./components/LeafletMap";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ProfileTool } from "./components/ProfileTool";
+import { ArcGISSearch } from "./components/ArcGISSearch";
 import { generateSampleTerrain } from "./geo/sampleTerrain";
 import { parseUrlState, useUrlStateSync } from "./hooks/useUrlState";
 
@@ -157,6 +158,16 @@ export function App() {
     }
   }, []);
 
+  const handleArcGISDataLoaded = useCallback((result: LoadResult, name: string) => {
+    setTerrainData(result.terrain);
+    setInfo(result.info);
+    setFileName(name);
+    setProfileStart(null);
+    setProfileEnd(null);
+    setProfileMode(false);
+    setError(null);
+  }, []);
+
   const handleElevationRange = useCallback((min: number, max: number) => {
     setElevRange({ min, max });
   }, []);
@@ -295,6 +306,7 @@ export function App() {
             className="sample-btn"
             onClick={handleLoadSample}
             disabled={loading}
+            aria-busy={loading}
           >
             Load Sample Terrain
           </button>
@@ -303,6 +315,11 @@ export function App() {
           )}
           {loading && <div className="loading-text">Loading terrain data...</div>}
           {error && <div className="error-text">{error}</div>}
+        </div>
+
+        <div className="sidebar-section">
+          <h2>ArcGIS Elevation Data</h2>
+          <ArcGISSearch onDataLoaded={handleArcGISDataLoaded} disabled={loading} />
         </div>
 
         {info && (
@@ -370,10 +387,11 @@ export function App() {
             <h2>Controls</h2>
 
             <div className="control-group">
-              <label className="control-label">
+              <label className="control-label" htmlFor="elev-slider">
                 Elevation: {exaggeration.toFixed(1)}x
               </label>
               <input
+                id="elev-slider"
                 type="range"
                 min="0.1"
                 max="5"
@@ -381,6 +399,10 @@ export function App() {
                 value={exaggeration}
                 onChange={(e) => setExaggeration(parseFloat(e.target.value))}
                 className="slider"
+                aria-label={`Elevation exaggeration: ${exaggeration.toFixed(1)}x`}
+                aria-valuemin={0.1}
+                aria-valuemax={5}
+                aria-valuenow={exaggeration}
               />
             </div>
 
@@ -392,6 +414,8 @@ export function App() {
                     key={opt.value}
                     className={`ramp-btn ${colorRamp === opt.value ? "active" : ""}`}
                     onClick={() => setColorRamp(opt.value)}
+                    aria-pressed={colorRamp === opt.value}
+                    aria-label={`Color ramp: ${opt.label}`}
                   >
                     {opt.label}
                   </button>
@@ -433,20 +457,20 @@ export function App() {
           <div className="sidebar-section">
             <h2>Export</h2>
             <div className="export-buttons">
-              <button className="export-btn" onClick={handleExportScreenshot}>
-                <span className="export-icon">&#128247;</span>
+              <button className="export-btn" onClick={handleExportScreenshot} aria-label="Export screenshot as PNG">
+                <span className="export-icon" aria-hidden="true">&#128247;</span>
                 Screenshot PNG
               </button>
-              <button className="export-btn" onClick={handleExportMetadata}>
-                <span className="export-icon">&#128196;</span>
+              <button className="export-btn" onClick={handleExportMetadata} aria-label="Export metadata as JSON">
+                <span className="export-icon" aria-hidden="true">&#128196;</span>
                 Metadata JSON
               </button>
-              <button className="export-btn" onClick={handleExportElevationCsv}>
-                <span className="export-icon">&#128202;</span>
+              <button className="export-btn" onClick={handleExportElevationCsv} aria-label="Export elevation data as CSV">
+                <span className="export-icon" aria-hidden="true">&#128202;</span>
                 Elevation CSV
               </button>
-              <button className="export-btn" onClick={handleCopyLink}>
-                <span className="export-icon">&#128279;</span>
+              <button className="export-btn" onClick={handleCopyLink} aria-label="Copy shareable link to clipboard">
+                <span className="export-icon" aria-hidden="true">&#128279;</span>
                 {linkCopied ? "Copied!" : "Copy Link"}
               </button>
             </div>
@@ -494,11 +518,13 @@ export function App() {
 
         <div className="map-panel">
           <div className="map-panel-header">
-            <span className="map-panel-label">Location</span>
+            <label htmlFor="basemap-select" className="map-panel-label">Location</label>
             <select
+              id="basemap-select"
               className="basemap-select"
               value={basemap}
               onChange={(e) => setBasemap(e.target.value)}
+              aria-label="Select basemap style"
             >
               {BASEMAP_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -510,18 +536,39 @@ export function App() {
       </div>
 
       {loading && (
-        <div className="loading-overlay">
+        <div className="loading-overlay" role="alert" aria-busy="true" aria-label="Loading terrain data">
           <div className="loading-content">
-            <div className="loading-spinner-ring" />
+            <div className="loading-spinner-ring" aria-hidden="true" />
             <div className="loading-text-large">Loading terrain...</div>
           </div>
         </div>
       )}
 
       {showShortcuts && (
-        <div className="shortcuts-overlay" onClick={() => setShowShortcuts(false)}>
+        <div
+          className="shortcuts-overlay"
+          onClick={() => setShowShortcuts(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" || e.key === "?") setShowShortcuts(false);
+            if (e.key === "Tab") {
+              const panel = e.currentTarget.querySelector(".shortcuts-panel");
+              const focusable = panel?.querySelectorAll<HTMLElement>("button, [tabindex]");
+              if (focusable && focusable.length > 0) {
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+              }
+            }
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="shortcuts-title"
+          tabIndex={-1}
+          ref={(el) => { if (el) { const btn = el.querySelector<HTMLElement>(".shortcuts-close-btn"); btn?.focus(); } }}
+        >
           <div className="shortcuts-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="shortcuts-title">Keyboard Shortcuts</div>
+            <div className="shortcuts-title" id="shortcuts-title">Keyboard Shortcuts</div>
             <div className="shortcuts-grid">
               {KEYBOARD_SHORTCUTS.map((s) => (
                 <div className="shortcut-row" key={s.key}>
@@ -530,7 +577,7 @@ export function App() {
                 </div>
               ))}
             </div>
-            <div className="shortcuts-dismiss">Press ? to close</div>
+            <button className="shortcuts-close-btn" onClick={() => setShowShortcuts(false)} aria-label="Close keyboard shortcuts">Close</button>
           </div>
         </div>
       )}

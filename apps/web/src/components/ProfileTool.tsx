@@ -123,12 +123,14 @@ export function ProfileTool({ terrainData, startPoint, endPoint, terrainBounds, 
           <span>Ascent: +{stats.totalAscent.toFixed(1)}m</span>
           <span>Descent: -{stats.totalDescent.toFixed(1)}m</span>
         </div>
-        <button className="profile-clear-btn" onClick={onClear}>Clear</button>
+        <button className="profile-clear-btn" onClick={onClear} aria-label="Clear elevation profile">Clear</button>
       </div>
       <svg
         viewBox={`0 0 ${svgW} ${svgH}`}
         className="profile-svg"
         preserveAspectRatio="none"
+        role="img"
+        aria-label="Elevation profile cross-section graph"
       >
         <rect x={padL} y={padT} width={plotW} height={plotH} fill="rgba(255,255,255,0.05)" />
         {[0, 0.25, 0.5, 0.75, 1].map((t) => {

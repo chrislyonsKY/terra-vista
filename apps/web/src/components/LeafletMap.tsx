@@ -270,5 +270,5 @@ export function LeafletMap({ info, fileName, basemap }: LeafletMapProps) {
     mapRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
   }, [info, fileName]);
 
-  return <div ref={containerRef} className="leaflet-container-wrapper" />;
+  return <div ref={containerRef} className="leaflet-container-wrapper" role="region" aria-label="Interactive location map" />;
 }
