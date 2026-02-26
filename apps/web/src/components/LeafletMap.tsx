@@ -5,13 +5,14 @@ import type { RasterInfo } from "../geo/loader";
 
 interface LeafletMapProps {
   info: RasterInfo | null;
+  fileName?: string;
 }
 
 function computeGeoBounds(info: RasterInfo): L.LatLngBoundsExpression | null {
   const x1 = info.originX;
   const y1 = info.originY;
   const x2 = info.originX + info.width * info.pixelSizeX;
-  const y2 = info.originY - info.height * info.pixelSizeY;
+  const y2 = info.originY - info.height * Math.abs(info.pixelSizeY);
 
   const minX = Math.min(x1, x2);
   const maxX = Math.max(x1, x2);
@@ -31,11 +32,10 @@ function computeGeoBounds(info: RasterInfo): L.LatLngBoundsExpression | null {
   ];
 }
 
-export function LeafletMap({ info }: LeafletMapProps) {
+export function LeafletMap({ info, fileName }: LeafletMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
-  const rectRef = useRef<L.Rectangle | null>(null);
-  const labelRef = useRef<L.Marker | null>(null);
+  const layerGroupRef = useRef<L.LayerGroup | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -57,6 +57,7 @@ export function LeafletMap({ info }: LeafletMapProps) {
 
     L.control.zoom({ position: "topright" }).addTo(map);
 
+    layerGroupRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
     setTimeout(() => map.invalidateSize(), 100);
@@ -64,46 +65,70 @@ export function LeafletMap({ info }: LeafletMapProps) {
     return () => {
       map.remove();
       mapRef.current = null;
-      rectRef.current = null;
-      labelRef.current = null;
+      layerGroupRef.current = null;
     };
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current || !info) return;
+    if (!mapRef.current || !layerGroupRef.current) return;
 
-    if (rectRef.current) {
-      rectRef.current.remove();
-      rectRef.current = null;
-    }
-    if (labelRef.current) {
-      labelRef.current.remove();
-      labelRef.current = null;
-    }
+    layerGroupRef.current.clearLayers();
+
+    if (!info) return;
 
     const bounds = computeGeoBounds(info);
 
     if (!bounds) {
       const icon = L.divIcon({
-        className: "projected-crs-label",
-        html: `<div style="background:rgba(20,20,20,0.85);color:#a3a3a3;padding:6px 10px;border-radius:6px;font-size:11px;white-space:nowrap;backdrop-filter:blur(4px)">Projected CRS (${info.crs ?? "unknown"}) — map preview unavailable</div>`,
+        className: "leaflet-projected-label",
+        html: `<div class="footprint-label-projected">Projected CRS (${info.crs ?? "unknown"}) — map preview unavailable</div>`,
         iconSize: [300, 30],
         iconAnchor: [150, 15],
       });
-      labelRef.current = L.marker([38.5, -84.5], { icon }).addTo(mapRef.current);
+      L.marker([38.5, -84.5], { icon }).addTo(layerGroupRef.current);
       return;
     }
 
-    rectRef.current = L.rectangle(bounds, {
-      color: "#10b981",
-      weight: 2,
-      fillColor: "#10b981",
-      fillOpacity: 0.15,
-      dashArray: "6 3",
-    }).addTo(mapRef.current);
+    const latLngBounds = L.latLngBounds(bounds as L.LatLngExpression[]);
 
-    mapRef.current.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
-  }, [info]);
+    L.rectangle(bounds, {
+      color: "#10b981",
+      weight: 3,
+      fillColor: "#10b981",
+      fillOpacity: 0.2,
+      dashArray: undefined,
+    }).addTo(layerGroupRef.current);
+
+    const corners = [
+      latLngBounds.getSouthWest(),
+      latLngBounds.getSouthEast(),
+      latLngBounds.getNorthWest(),
+      latLngBounds.getNorthEast(),
+    ];
+    for (const corner of corners) {
+      L.circleMarker(corner, {
+        radius: 4,
+        color: "#10b981",
+        weight: 2,
+        fillColor: "#0d9668",
+        fillOpacity: 1,
+      }).addTo(layerGroupRef.current);
+    }
+
+    const displayName = fileName
+      ? (fileName.length > 30 ? fileName.slice(0, 27) + "..." : fileName)
+      : "Raster footprint";
+    const center = latLngBounds.getCenter();
+    const labelIcon = L.divIcon({
+      className: "leaflet-footprint-label",
+      html: `<div class="footprint-name-tag">${displayName}</div>`,
+      iconSize: [200, 24],
+      iconAnchor: [100, 12],
+    });
+    L.marker(center, { icon: labelIcon, interactive: false }).addTo(layerGroupRef.current);
+
+    mapRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
+  }, [info, fileName]);
 
   return <div ref={containerRef} className="leaflet-container-wrapper" />;
 }

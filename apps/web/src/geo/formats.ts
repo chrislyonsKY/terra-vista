@@ -6,6 +6,7 @@ export type FormatId =
   | "xyz"
   | "usgsdem"
   | "dted"
+  | "las"
   | "jp2"
   | "worldfile"
   | "gpkg"
@@ -32,6 +33,7 @@ export const FORMATS: FormatInfo[] = [
   { id: "dted", name: "DTED", extensions: [".dt0", ".dt1", ".dt2"], supported: true, description: "Digital Terrain Elevation Data" },
   { id: "netcdf", name: "NetCDF", extensions: [".nc"], supported: true, description: "Scientific multidimensional arrays" },
   { id: "worldfile", name: "Image + World File", extensions: [".jpg", ".jpeg", ".png", ".bmp", ".gif"], supported: true, description: "Standard image with georeferencing sidecar" },
+  { id: "las", name: "LAS/LAZ", extensions: [".las", ".laz"], supported: true, description: "LiDAR point cloud (gridded to DEM)" },
   { id: "jp2", name: "JPEG 2000", extensions: [".jp2", ".jpx"], supported: false, description: "Lossless compression with geospatial metadata" },
   { id: "gpkg", name: "GeoPackage", extensions: [".gpkg"], supported: false, description: "SQLite-based vector/raster container" },
   { id: "ecw", name: "ECW", extensions: [".ecw"], supported: false, description: "Enhanced Compression Wavelet (proprietary)" },

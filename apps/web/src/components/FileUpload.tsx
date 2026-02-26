@@ -85,7 +85,7 @@ export function FileUpload({ onFileSelected, disabled }: FileUploadProps) {
         Drop a raster file here or click to browse
       </span>
       <span className="file-upload-hint">
-        GeoTIFF, DEM, DTED, XYZ, NetCDF, IMG, and more
+        GeoTIFF, DEM, DTED, XYZ, NetCDF, LAS, IMG, and more
       </span>
       <input
         ref={inputRef}

@@ -57,6 +57,10 @@ export async function loadRasterFile(file: File, worldFileContent?: string): Pro
       const { loadImageWithWorldFile } = await import("./loadWorldFile");
       return loadImageWithWorldFile(file, worldFileContent);
     }
+    case "las": {
+      const { loadLasFile } = await import("./loadLas");
+      return loadLasFile(file);
+    }
     default:
       throw new Error(`Unsupported format: ${file.name}`);
   }

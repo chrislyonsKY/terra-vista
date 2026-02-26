@@ -19,7 +19,8 @@ export class ThreeApp {
 
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x111111);
+    this.scene.background = new THREE.Color(0x1a1a1e);
+    this.scene.fog = new THREE.FogExp2(0x1a1a1e, 0.002);
 
     this.camera = new THREE.PerspectiveCamera(
       60,
@@ -30,7 +31,9 @@ export class ThreeApp {
     this.camera.position.set(0, 50, 80);
     this.camera.lookAt(0, 0, 0);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.2;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     container.appendChild(this.renderer.domElement);
@@ -94,9 +97,22 @@ export class ThreeApp {
   }
 
   resetCamera(): void {
-    this.camera.position.set(120, 100, 160);
-    this.controls.target.set(0, 0, 0);
+    this.camera.position.set(150, 120, 180);
+    this.controls.target.set(0, 10, 0);
     this.controls.update();
+  }
+
+  captureScreenshot(): string | null {
+    this.renderer.render(this.scene, this.camera);
+    try {
+      return this.renderer.domElement.toDataURL("image/png");
+    } catch {
+      return null;
+    }
+  }
+
+  getRenderer(): THREE.WebGLRenderer {
+    return this.renderer;
   }
 
   private animate(): void {

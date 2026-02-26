@@ -9,12 +9,18 @@ export default defineConfig({
     port: 5000,
     allowedHosts: true,
     strictPort: true,
+    fs: {
+      allow: ["../.."],
+    },
   },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@mapqc/shared": path.resolve(__dirname, "../../packages/shared/src"),
     },
+  },
+  optimizeDeps: {
+    exclude: ["laz-perf"],
   },
   build: {
     outDir: "dist",

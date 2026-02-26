@@ -106,7 +106,7 @@ export class TerrainModule implements SceneModule {
     const vertCountX = segW + 1;
     const vertCountZ = segH + 1;
 
-    const heightScale = (this.sceneSize * 0.15) * this.exaggeration;
+    const heightScale = (this.sceneSize * 0.25) * this.exaggeration;
 
     for (let iz = 0; iz < vertCountZ; iz++) {
       for (let ix = 0; ix < vertCountX; ix++) {
@@ -131,8 +131,8 @@ export class TerrainModule implements SceneModule {
       this.material = new THREE.MeshStandardMaterial({
         side: THREE.DoubleSide,
         flatShading: false,
-        roughness: 0.85,
-        metalness: 0.05,
+        roughness: 0.7,
+        metalness: 0.1,
       });
     }
 

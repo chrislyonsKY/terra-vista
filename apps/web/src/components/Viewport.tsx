@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from "react";
 import { ThreeApp } from "../three/ThreeApp";
 import { GridModule } from "../three/modules/GridModule";
 import { LightingModule } from "../three/modules/LightingModule";
@@ -13,16 +13,21 @@ interface ViewportProps {
   onElevationRange?: (min: number, max: number) => void;
 }
 
-export function Viewport({
-  terrainData,
-  exaggeration,
-  colorRamp,
-  wireframe,
-  onElevationRange,
-}: ViewportProps) {
+export interface ViewportHandle {
+  captureScreenshot: () => string | null;
+}
+
+export const Viewport = forwardRef<ViewportHandle, ViewportProps>(function Viewport(
+  { terrainData, exaggeration, colorRamp, wireframe, onElevationRange },
+  ref
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<ThreeApp | null>(null);
   const terrainRef = useRef<TerrainModule | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    captureScreenshot: () => appRef.current?.captureScreenshot() ?? null,
+  }));
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -79,4 +84,4 @@ export function Viewport({
       </button>
     </div>
   );
-}
+});
