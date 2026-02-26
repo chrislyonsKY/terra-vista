@@ -26,6 +26,9 @@ export default defineConfig({
   optimizeDeps: {
     include: ["laz-perf"],
   },
+  worker: {
+    format: "es",
+  },
   build: {
     outDir: "dist",
     sourcemap: true,

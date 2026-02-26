@@ -402,6 +402,11 @@ const COLOR_RAMPS: Record<ColorRampName, (t: number) => [number, number, number]
       ],
       t
     ),
+  slope: (t) => {
+    const v = Math.round(255 - t * 205);
+    return [v, v, v];
+  },
+  aspect: (t) => hslToRgb(t, 0.7, 0.5),
 };
 
 function hslToRgb(h: number, s: number, l: number): [number, number, number] {
