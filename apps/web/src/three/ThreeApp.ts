@@ -19,7 +19,7 @@ export class ThreeApp {
 
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x1a1a2e);
+    this.scene.background = new THREE.Color(0x111111);
 
     this.camera = new THREE.PerspectiveCamera(
       60,

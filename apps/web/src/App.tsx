@@ -4,6 +4,7 @@ import type { GeoTiffInfo } from "./geo/loadGeoTiff";
 import type { TerrainData, ColorRampName } from "./three/modules/TerrainModule";
 import { FileUpload } from "./components/FileUpload";
 import { Viewport } from "./components/Viewport";
+import { LeafletMap } from "./components/LeafletMap";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const RAMP_OPTIONS: { value: ColorRampName; label: string }[] = [
@@ -53,8 +54,8 @@ export function App() {
     <div className="app-layout">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <h1>Terrain Explorer</h1>
-          <p>3D GeoTIFF Visualization</p>
+          <h1>Terra Vista</h1>
+          <p>3D Terrain Visualizer</p>
         </div>
 
         <div className="sidebar-section">
@@ -109,7 +110,7 @@ export function App() {
 
             <div className="control-group">
               <label className="control-label">
-                Elevation Exaggeration: {exaggeration.toFixed(1)}x
+                Elevation: {exaggeration.toFixed(1)}x
               </label>
               <input
                 type="range"
@@ -144,7 +145,7 @@ export function App() {
                   checked={wireframe}
                   onChange={(e) => setWireframe(e.target.checked)}
                 />
-                Show Wireframe
+                Wireframe
               </label>
             </div>
           </div>
@@ -152,21 +153,30 @@ export function App() {
 
         {!terrainData && !loading && (
           <div className="empty-state">
-            Drop a GeoTIFF elevation file to explore it in 3D.
+            Drop a GeoTIFF elevation file to explore terrain in 3D.
             Try USGS 1/3 arc-second DEMs for best results.
           </div>
         )}
       </aside>
 
-      <ErrorBoundary>
-        <Viewport
-          terrainData={terrainData}
-          exaggeration={exaggeration}
-          colorRamp={colorRamp}
-          wireframe={wireframe}
-          onElevationRange={handleElevationRange}
-        />
-      </ErrorBoundary>
+      <div className="main-content">
+        <div className="viewport-area">
+          <ErrorBoundary>
+            <Viewport
+              terrainData={terrainData}
+              exaggeration={exaggeration}
+              colorRamp={colorRamp}
+              wireframe={wireframe}
+              onElevationRange={handleElevationRange}
+            />
+          </ErrorBoundary>
+        </div>
+
+        <div className="map-panel">
+          <span className="map-panel-label">Location</span>
+          <LeafletMap info={info} />
+        </div>
+      </div>
 
       {loading && (
         <div className="loading-overlay">

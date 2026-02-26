@@ -9,8 +9,8 @@ html, body, #root {
   height: 100%;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #0a0a14;
-  color: #e0e0f0;
+  background: #0c0c0c;
+  color: #d4d4d4;
 }
 
 .app-layout {
@@ -23,8 +23,8 @@ html, body, #root {
   width: 320px;
   min-width: 320px;
   height: 100%;
-  background: #12122a;
-  border-right: 1px solid #252548;
+  background: #141414;
+  border-right: 1px solid #262626;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -32,25 +32,25 @@ html, body, #root {
 
 .sidebar-header {
   padding: 20px;
-  border-bottom: 1px solid #252548;
-  background: linear-gradient(135deg, #161638 0%, #1a1a3a 100%);
+  border-bottom: 1px solid #262626;
+  background: #181818;
 }
 
 .sidebar-header h1 {
   font-size: 20px;
   font-weight: 700;
-  color: #8888ff;
+  color: #10b981;
   margin-bottom: 4px;
 }
 
 .sidebar-header p {
   font-size: 12px;
-  color: #6060a0;
+  color: #737373;
 }
 
 .sidebar-section {
   padding: 16px 20px;
-  border-bottom: 1px solid #252548;
+  border-bottom: 1px solid #262626;
 }
 
 .sidebar-section h2 {
@@ -58,19 +58,63 @@ html, body, #root {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #6060a0;
+  color: #737373;
   margin-bottom: 12px;
 }
 
-.viewport {
+.main-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+
+.viewport-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.viewport {
+  width: 100%;
   height: 100%;
   position: relative;
   overflow: hidden;
 }
 
+.map-panel {
+  height: 220px;
+  min-height: 220px;
+  border-top: 1px solid #262626;
+  position: relative;
+}
+
+.leaflet-container-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+.map-panel-label {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  z-index: 1000;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #a3a3a3;
+  background: rgba(20, 20, 20, 0.85);
+  padding: 4px 8px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
 .file-upload {
-  border: 2px dashed #303060;
+  border: 2px dashed #333;
   border-radius: 10px;
   padding: 20px;
   text-align: center;
@@ -79,26 +123,26 @@ html, body, #root {
 }
 
 .file-upload:hover {
-  border-color: #5050a0;
-  background: #181838;
+  border-color: #10b981;
+  background: #1a1a1a;
 }
 
 .file-upload.dragging {
-  border-color: #7070ff;
-  background: #1e1e40;
-  box-shadow: 0 0 20px rgba(112, 112, 255, 0.1);
+  border-color: #10b981;
+  background: #0c1f17;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
 }
 
 .file-upload-label {
   font-size: 13px;
-  color: #8888bb;
+  color: #a3a3a3;
   display: block;
   margin-bottom: 6px;
 }
 
 .file-upload-hint {
   font-size: 11px;
-  color: #4040a0;
+  color: #525252;
 }
 
 .file-upload input[type="file"] {
@@ -108,7 +152,7 @@ html, body, #root {
 .file-name {
   margin-top: 10px;
   font-size: 12px;
-  color: #6060a0;
+  color: #737373;
   font-family: "SF Mono", "Fira Code", monospace;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -122,7 +166,7 @@ html, body, #root {
 }
 
 .info-item {
-  background: #181838;
+  background: #1a1a1a;
   border-radius: 8px;
   padding: 10px 12px;
 }
@@ -131,14 +175,14 @@ html, body, #root {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #5050a0;
+  color: #525252;
   display: block;
   margin-bottom: 4px;
 }
 
 .info-value {
   font-size: 14px;
-  color: #c0c0f0;
+  color: #d4d4d4;
   font-family: "SF Mono", "Fira Code", monospace;
 }
 
@@ -152,7 +196,7 @@ html, body, #root {
 
 .control-label {
   font-size: 12px;
-  color: #9090c0;
+  color: #a3a3a3;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -160,7 +204,7 @@ html, body, #root {
 }
 
 .control-label input[type="checkbox"] {
-  accent-color: #6060ff;
+  accent-color: #10b981;
   width: 16px;
   height: 16px;
 }
@@ -170,7 +214,7 @@ html, body, #root {
   height: 6px;
   -webkit-appearance: none;
   appearance: none;
-  background: #252548;
+  background: #262626;
   border-radius: 3px;
   outline: none;
 }
@@ -181,23 +225,23 @@ html, body, #root {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #6060ff;
+  background: #10b981;
   cursor: pointer;
-  border: 2px solid #8888ff;
+  border: 2px solid #34d399;
   transition: background 0.15s;
 }
 
 .slider::-webkit-slider-thumb:hover {
-  background: #7070ff;
+  background: #059669;
 }
 
 .slider::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #6060ff;
+  background: #10b981;
   cursor: pointer;
-  border: 2px solid #8888ff;
+  border: 2px solid #34d399;
 }
 
 .ramp-buttons {
@@ -209,23 +253,23 @@ html, body, #root {
 .ramp-btn {
   padding: 6px 12px;
   border-radius: 6px;
-  border: 1px solid #303060;
-  background: #181838;
-  color: #8888bb;
+  border: 1px solid #333;
+  background: #1a1a1a;
+  color: #a3a3a3;
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .ramp-btn:hover {
-  border-color: #5050a0;
-  background: #202048;
+  border-color: #525252;
+  background: #222;
 }
 
 .ramp-btn.active {
-  border-color: #6060ff;
-  background: #282860;
-  color: #c0c0ff;
+  border-color: #10b981;
+  background: #0c1f17;
+  color: #34d399;
 }
 
 .reset-camera-btn {
@@ -234,9 +278,9 @@ html, body, #root {
   right: 16px;
   padding: 8px 16px;
   border-radius: 8px;
-  border: 1px solid #303060;
-  background: rgba(18, 18, 42, 0.85);
-  color: #8888bb;
+  border: 1px solid #333;
+  background: rgba(20, 20, 20, 0.85);
+  color: #a3a3a3;
   font-size: 12px;
   cursor: pointer;
   backdrop-filter: blur(8px);
@@ -245,9 +289,9 @@ html, body, #root {
 }
 
 .reset-camera-btn:hover {
-  border-color: #5050a0;
-  color: #c0c0ff;
-  background: rgba(24, 24, 56, 0.9);
+  border-color: #10b981;
+  color: #d4d4d4;
+  background: rgba(20, 20, 20, 0.95);
 }
 
 .loading-overlay {
@@ -259,7 +303,7 @@ html, body, #root {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 10, 20, 0.85);
+  background: rgba(12, 12, 12, 0.85);
   backdrop-filter: blur(4px);
   z-index: 100;
 }
@@ -274,8 +318,8 @@ html, body, #root {
 .loading-spinner-ring {
   width: 40px;
   height: 40px;
-  border: 3px solid #252548;
-  border-top: 3px solid #6060ff;
+  border: 3px solid #262626;
+  border-top: 3px solid #10b981;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -286,24 +330,24 @@ html, body, #root {
 
 .loading-text {
   font-size: 12px;
-  color: #6060a0;
+  color: #737373;
 }
 
 .loading-text-large {
   font-size: 14px;
-  color: #8888bb;
+  color: #a3a3a3;
 }
 
 .error-text {
   margin-top: 10px;
   font-size: 12px;
-  color: #e05050;
+  color: #ef4444;
 }
 
 .empty-state {
   padding: 24px 20px;
   text-align: center;
-  color: #4040a0;
+  color: #525252;
   font-size: 13px;
   line-height: 1.6;
 }
@@ -317,10 +361,10 @@ html, body, #root {
 }
 
 .sidebar::-webkit-scrollbar-thumb {
-  background: #252548;
+  background: #262626;
   border-radius: 3px;
 }
 
 .sidebar::-webkit-scrollbar-thumb:hover {
-  background: #353568;
+  background: #333;
 }

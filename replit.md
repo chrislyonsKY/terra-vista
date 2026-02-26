@@ -1,12 +1,13 @@
-# Terrain Explorer (MapQC-3D)
+# Terra Vista (MapQC-3D)
 
-Interactive 3D terrain visualizer that loads GeoTIFF elevation files and renders them as stunning 3D terrain with color ramps, elevation exaggeration, and orbit controls. Built as a monorepo with npm workspaces.
+Interactive 3D terrain visualizer that loads GeoTIFF elevation files and renders them as stunning 3D terrain with color ramps, elevation exaggeration, orbit controls, and a Leaflet/OpenStreetMap location map. Built as a monorepo with npm workspaces.
 
 ## Tech Stack
 
 - **Runtime**: Browser (web app), Node.js 20 (CLI)
 - **Language**: Strict TypeScript (no implicit any)
 - **3D Engine**: Three.js (with OrbitControls, THREE.Timer)
+- **2D Map**: Leaflet + OpenStreetMap (location context)
 - **UI Framework**: React 19
 - **Build Tool**: Vite 7
 - **GeoTIFF Parsing**: geotiff.js
@@ -14,6 +15,7 @@ Interactive 3D terrain visualizer that loads GeoTIFF elevation files and renders
 - **CLI Framework**: Commander
 - **Dev Server**: port 5000 (Vite, bound to 0.0.0.0)
 - **Monorepo**: npm workspaces
+- **Theme**: Dark neutral with green/teal accents (#10b981)
 
 ## Project Structure
 
@@ -34,6 +36,7 @@ mapqc-3d/
 │   │       ├── components/
 │   │       │   ├── ErrorBoundary.tsx  # WebGL fallback
 │   │       │   ├── FileUpload.tsx     # Drag-drop GeoTIFF upload
+│   │       │   ├── LeafletMap.tsx     # Leaflet + OSM location map
 │   │       │   └── Viewport.tsx       # Three.js canvas + controls bridge
 │   │       ├── geo/
 │   │       │   └── loadGeoTiff.ts     # Browser GeoTIFF loader
