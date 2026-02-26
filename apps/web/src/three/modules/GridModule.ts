@@ -5,7 +5,7 @@ export class GridModule implements SceneModule {
   private gridHelper: THREE.GridHelper | null = null;
 
   init(scene: THREE.Scene, _camera: THREE.PerspectiveCamera): void {
-    this.gridHelper = new THREE.GridHelper(400, 40, 0x3a3a3e, 0x333336);
+    this.gridHelper = new THREE.GridHelper(400, 40, 0x9ab0c4, 0xb0c4d6);
     this.gridHelper.position.y = -0.5;
     scene.add(this.gridHelper);
   }

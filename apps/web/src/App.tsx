@@ -473,6 +473,8 @@ export function App() {
               profileMode={profileMode}
               onProfileClick={handleProfileClick}
               skipCameraReset={hasUrlCamera}
+              profileStart={profileStart}
+              profileEnd={profileEnd}
             />
           </ErrorBoundary>
           {terrainData && profileStart && profileEnd && (() => {

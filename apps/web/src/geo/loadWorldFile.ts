@@ -60,7 +60,7 @@ export async function loadImageWithWorldFile(
     bitsPerSample: [8],
     pixelSizeX,
     pixelSizeY,
-    crs: null,
+    crs: (originX >= -180 && (originX + width * pixelSizeX) <= 180 && Math.min(originY, originY - height * pixelSizeY) >= -90 && Math.max(originY, originY - height * pixelSizeY) <= 90) ? "EPSG:4326" : null,
     noDataValue: null,
     originX,
     originY,

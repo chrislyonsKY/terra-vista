@@ -115,7 +115,7 @@ export async function loadNetcdfFile(file: File): Promise<LoadResult> {
     bitsPerSample: [32],
     pixelSizeX,
     pixelSizeY,
-    crs: null,
+    crs: (originX >= -180 && (originX + width * pixelSizeX) <= 180 && (originY - height * pixelSizeY) >= -90 && originY <= 90) ? "EPSG:4326" : null,
     noDataValue,
     originX,
     originY,

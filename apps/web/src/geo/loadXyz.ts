@@ -79,7 +79,7 @@ export async function loadXyzFile(file: File): Promise<LoadResult> {
     bitsPerSample: [32],
     pixelSizeX,
     pixelSizeY,
-    crs: null,
+    crs: (minX >= -180 && maxX <= 180 && minY >= -90 && maxY <= 90) ? "EPSG:4326" : null,
     noDataValue: null,
     originX: minX,
     originY: maxY,
