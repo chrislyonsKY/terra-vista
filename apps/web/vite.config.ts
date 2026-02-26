@@ -19,6 +19,9 @@ export default defineConfig({
       "@mapqc/shared": path.resolve(__dirname, "../../packages/shared/src"),
     },
   },
+  define: {
+    "import.meta.env.VITE_ARCGIS_API_KEY": JSON.stringify(process.env.ARCGIS_API_KEY ?? ""),
+  },
   optimizeDeps: {
     exclude: ["laz-perf"],
   },

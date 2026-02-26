@@ -16,6 +16,16 @@ const RAMP_OPTIONS: { value: ColorRampName; label: string }[] = [
   { value: "desert", label: "Desert" },
 ];
 
+const BASEMAP_OPTIONS: { value: string; label: string }[] = [
+  { value: "osm", label: "OpenStreetMap" },
+  { value: "Topographic", label: "Esri Topo" },
+  { value: "Imagery", label: "Esri Imagery" },
+  { value: "Terrain", label: "Esri Terrain" },
+  { value: "ShadedRelief", label: "Shaded Relief" },
+  { value: "DarkGray", label: "Dark Gray" },
+  { value: "Streets", label: "Esri Streets" },
+];
+
 function downloadBlob(data: string, filename: string, mime: string) {
   const blob = new Blob([data], { type: mime });
   const url = URL.createObjectURL(blob);
@@ -44,6 +54,7 @@ export function App() {
   const [colorRamp, setColorRamp] = useState<ColorRampName>("terrain");
   const [wireframe, setWireframe] = useState(false);
   const [elevRange, setElevRange] = useState<{ min: number; max: number } | null>(null);
+  const [basemap, setBasemap] = useState("Topographic");
 
   const viewportRef = useRef<ViewportHandle>(null);
 
@@ -286,8 +297,19 @@ export function App() {
         </div>
 
         <div className="map-panel">
-          <span className="map-panel-label">Location</span>
-          <LeafletMap info={info} fileName={fileName ?? undefined} />
+          <div className="map-panel-header">
+            <span className="map-panel-label">Location</span>
+            <select
+              className="basemap-select"
+              value={basemap}
+              onChange={(e) => setBasemap(e.target.value)}
+            >
+              {BASEMAP_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          <LeafletMap info={info} fileName={fileName ?? undefined} basemap={basemap} />
         </div>
       </div>
 

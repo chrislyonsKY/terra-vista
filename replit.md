@@ -91,7 +91,7 @@ The web app is a 3D terrain explorer. Key features:
   - Supported: GeoTIFF (.tif/.tiff), COG (.cog), ERDAS Imagine (.img), ASCII XYZ (.xyz), USGS DEM (.dem), DTED (.dt0/.dt1/.dt2), NetCDF (.nc), LAS/LAZ (.las/.laz), Image + World File (.jpg+.jgw, .png+.pgw, etc.)
   - Recognized but unsupported (browser limitation): JPEG 2000, GeoPackage, ECW, MrSID, HDF — shows clear error message suggesting GDAL conversion
 - **3D terrain rendering**: Normalizes geographic coordinates to a fixed 200-unit scene space
-- **Leaflet/OSM map**: Shows geographic extent of loaded data on OpenStreetMap
+- **Leaflet map with Esri basemaps**: Shows geographic extent with switchable basemaps (OSM, Esri Topo, Imagery, Terrain, Shaded Relief, Dark Gray, Streets) via esri-leaflet. API key injected via VITE_ARCGIS_API_KEY env var.
 - **5 color ramps**: Terrain, Viridis, Magma, Arctic, Desert (selectable in sidebar)
 - **Elevation exaggeration**: 0.1x–5x slider
 - **Wireframe overlay**: Toggle on/off

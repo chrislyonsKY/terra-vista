@@ -1,12 +1,21 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import * as esriLeaflet from "esri-leaflet";
 import type { RasterInfo } from "../geo/loader";
 
 interface LeafletMapProps {
   info: RasterInfo | null;
   fileName?: string;
+  basemap: string;
 }
+
+const ARCGIS_KEY = import.meta.env.VITE_ARCGIS_API_KEY as string;
+
+const VALID_ESRI_BASEMAPS = new Set([
+  "Streets", "Topographic", "Oceans", "NationalGeographic", "Physical",
+  "Gray", "DarkGray", "Imagery", "ShadedRelief", "Terrain", "USATopo",
+]);
 
 function computeGeoBounds(info: RasterInfo): L.LatLngBoundsExpression | null {
   const x1 = info.originX;
@@ -32,10 +41,48 @@ function computeGeoBounds(info: RasterInfo): L.LatLngBoundsExpression | null {
   ];
 }
 
-export function LeafletMap({ info, fileName }: LeafletMapProps) {
+function createBasemapLayer(basemapId: string): L.TileLayer {
+  if (basemapId === "osm") {
+    return L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://openstreetmap.org">OSM</a>',
+    });
+  }
+
+  if (!VALID_ESRI_BASEMAPS.has(basemapId)) {
+    return L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://openstreetmap.org">OSM</a>',
+    });
+  }
+
+  const esriOptions: Record<string, unknown> = { maxZoom: 18 };
+  if (ARCGIS_KEY) {
+    esriOptions.token = ARCGIS_KEY;
+  }
+  return esriLeaflet.basemapLayer(basemapId, esriOptions) as unknown as L.TileLayer;
+}
+
+export function LeafletMap({ info, fileName, basemap }: LeafletMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
+  const basemapLayerRef = useRef<L.TileLayer | null>(null);
+
+  const applyBasemap = useCallback((map: L.Map, basemapId: string) => {
+    if (basemapLayerRef.current) {
+      map.removeLayer(basemapLayerRef.current);
+    }
+    try {
+      const layer = createBasemapLayer(basemapId);
+      layer.addTo(map);
+      basemapLayerRef.current = layer;
+    } catch {
+      const fallback = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 });
+      fallback.addTo(map);
+      basemapLayerRef.current = fallback;
+    }
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -44,21 +91,15 @@ export function LeafletMap({ info, fileName }: LeafletMapProps) {
       center: [38.5, -84.5],
       zoom: 6,
       zoomControl: false,
-      attributionControl: false,
+      attributionControl: true,
     });
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 18,
-    }).addTo(map);
-
-    L.control.attribution({ position: "bottomright", prefix: false })
-      .addAttribution('&copy; <a href="https://openstreetmap.org">OSM</a>')
-      .addTo(map);
 
     L.control.zoom({ position: "topright" }).addTo(map);
 
     layerGroupRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
+
+    applyBasemap(map, basemap);
 
     setTimeout(() => map.invalidateSize(), 100);
 
@@ -66,8 +107,14 @@ export function LeafletMap({ info, fileName }: LeafletMapProps) {
       map.remove();
       mapRef.current = null;
       layerGroupRef.current = null;
+      basemapLayerRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    applyBasemap(mapRef.current, basemap);
+  }, [basemap, applyBasemap]);
 
   useEffect(() => {
     if (!mapRef.current || !layerGroupRef.current) return;
