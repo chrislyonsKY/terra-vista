@@ -8,7 +8,7 @@
 [![Esri](https://img.shields.io/badge/Esri_Basemaps-ArcGIS-007AC2?logo=esri&logoColor=white)](https://developers.arcgis.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Interactive 3D terrain visualizer that loads multiple elevation raster formats and renders them as 3D terrain with color ramps, elevation exaggeration controls, orbit navigation, and a Leaflet location map with switchable Esri basemaps.
+Interactive 3D terrain visualizer that loads multiple elevation raster formats and renders them as 3D terrain with color ramps, terrain analysis (slope/aspect), elevation profiles, orbit navigation, and a Leaflet location map with switchable Esri basemaps.
 
 ---
 
@@ -16,16 +16,22 @@ Interactive 3D terrain visualizer that loads multiple elevation raster formats a
 
 - **Multi-format raster loading** — GeoTIFF, Cloud Optimized GeoTIFF (COG), USGS DEM, DTED (.dt0/.dt1/.dt2), ASCII XYZ, NetCDF, ERDAS Imagine, LAS/LAZ point clouds, and image + world file pairs
 - **3D terrain rendering** — Three.js mesh with up to 800-segment resolution, ACES tone mapping, multi-directional lighting, fog
-- **5 color ramps** — Terrain, Viridis, Magma, Arctic, Desert
+- **7 color ramps** — Terrain, Viridis, Magma, Arctic, Desert, Slope, Aspect
+- **Slope analysis** — Horn's method finite differences; grayscale shading from flat (white) to steep (dark)
+- **Aspect analysis** — Compass direction of steepest descent; HSL color wheel (N=blue, E=green, S=red, W=yellow)
+- **Elevation profile tool** — Click two points on terrain for cross-section transect with SVG chart showing min/max, ascent/descent
 - **Elevation exaggeration** — 0.1x to 5.0x slider for emphasizing subtle relief
 - **Wireframe overlay** — Toggle wireframe on/off for mesh inspection
 - **Orbit controls** — Rotate, zoom, pan with damping; reset view button
 - **Leaflet location map** — Shows raster footprint with corner markers and filename label
 - **Esri ArcGIS basemaps** — Switch between OpenStreetMap, Esri Topographic, Imagery, Terrain, Shaded Relief, Dark Gray, and Streets
-- **Export** — Screenshot PNG, metadata JSON report, elevation CSV
+- **Sample terrain** — Built-in synthetic Kentucky terrain for instant demo without file upload
+- **Shareable URLs** — View state (exaggeration, ramp, wireframe, basemap, camera) encoded in URL hash
+- **Keyboard shortcuts** — W=wireframe, R=reset, 1-7=ramps, +/-=exaggeration, S=screenshot, P=profile, ?=help
+- **Export** — Screenshot PNG, metadata JSON report, elevation CSV, shareable link
 - **File info panel** — Format, dimensions, bands, bit depth, CRS, elevation range
 - **Terrain stats** — Pixel count, relief range, pixel size
-- **LAS/LAZ support** — Custom LAS 1.0–1.4 parser with LAZ decompression via laz-perf WASM; spatial binning to grid with neighbor interpolation for gap filling
+- **LAS/LAZ support** — Web Worker off-thread parsing with fallback; laz-perf WASM decompression; spatial binning to grid with neighbor interpolation
 - **Professional GIS theme** — Light sidebar, ArcGIS-blue accents, dark 3D viewport
 
 ## Supported Formats
@@ -44,6 +50,18 @@ Interactive 3D terrain visualizer that loads multiple elevation raster formats a
 
 Recognized but unsupported in-browser: JPEG 2000, GeoPackage, ECW, MrSID, HDF — the app displays a clear message suggesting GDAL conversion.
 
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `1`-`7` | Select color ramp (Terrain, Viridis, Magma, Arctic, Desert, Slope, Aspect) |
+| `W` | Toggle wireframe overlay |
+| `R` | Reset camera to default view |
+| `+` / `-` | Increase / decrease elevation exaggeration |
+| `S` | Export screenshot |
+| `P` | Toggle elevation profile mode |
+| `?` | Show/hide keyboard shortcuts help |
+
 ## Architecture
 
 ```
@@ -51,9 +69,10 @@ terra-vista/
 ├── apps/
 │   ├── web/            # Vite + React + Three.js browser app
 │   │   ├── src/
-│   │   │   ├── components/    # React UI (FileUpload, Viewport, LeafletMap, ErrorBoundary)
-│   │   │   ├── geo/           # Format loaders (GeoTIFF, LAS, DTED, XYZ, NetCDF, etc.)
-│   │   │   └── three/         # Three.js renderer, terrain mesh, lighting, grid
+│   │   │   ├── components/    # React UI (FileUpload, Viewport, LeafletMap, ProfileTool, ErrorBoundary)
+│   │   │   ├── geo/           # Format loaders + Web Worker (GeoTIFF, LAS, DTED, XYZ, NetCDF, etc.)
+│   │   │   ├── hooks/         # useUrlState (shareable URL hash state)
+│   │   │   └── three/         # Three.js renderer, terrain mesh + slope/aspect, lighting, grid
 │   │   └── public/            # Static assets (laz-perf.wasm)
 │   └── cli/            # Node.js CLI batch processor
 │       └── src/               # Commander CLI, scanner, JSON/PDF reporters

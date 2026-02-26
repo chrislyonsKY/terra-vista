@@ -8,7 +8,7 @@ export interface TerrainData {
   noDataValue: number | null;
 }
 
-export type ColorRampName = "terrain" | "viridis" | "magma" | "arctic" | "desert";
+export type ColorRampName = "terrain" | "viridis" | "magma" | "arctic" | "desert" | "slope" | "aspect";
 
 export class TerrainModule implements SceneModule {
   private mesh: THREE.Mesh | null = null;
@@ -34,6 +34,19 @@ export class TerrainModule implements SceneModule {
 
   getElevationRange(): { min: number; max: number } {
     return { min: this.minElev, max: this.maxElev };
+  }
+
+  getMesh(): THREE.Mesh | null {
+    return this.mesh;
+  }
+
+  getSceneBounds(): { sizeX: number; sizeZ: number } | null {
+    if (!this.currentData) return null;
+    const { width, height } = this.currentData;
+    const aspect = width / height;
+    const sizeX = aspect >= 1 ? this.sceneSize : this.sceneSize * aspect;
+    const sizeZ = aspect >= 1 ? this.sceneSize / aspect : this.sceneSize;
+    return { sizeX, sizeZ };
   }
 
   setExaggeration(value: number): void {
@@ -162,30 +175,37 @@ export class TerrainModule implements SceneModule {
     const pixels = new Uint8Array(texW * texH * 4);
     const range = this.maxElev - this.minElev || 1;
 
-    const rampFn = COLOR_RAMPS[this.currentRamp];
+    const isSlope = this.currentRamp === "slope";
+    const isAspect = this.currentRamp === "aspect";
 
-    for (let y = 0; y < texH; y++) {
-      for (let x = 0; x < texW; x++) {
-        const srcX = Math.floor((x / texW) * width);
-        const srcY = Math.floor((y / texH) * height);
-        const srcIdx = srcY * width + srcX;
-        const elev = elevations[srcIdx];
-        const texIdx = (y * texW + x) * 4;
+    if (isSlope || isAspect) {
+      this.renderSlopeAspect(pixels, texW, texH, isAspect);
+    } else {
+      const rampFn = COLOR_RAMPS[this.currentRamp as keyof typeof COLOR_RAMPS];
 
-        if ((noDataValue !== null && elev === noDataValue) || !isFinite(elev)) {
-          pixels[texIdx] = 20;
-          pixels[texIdx + 1] = 20;
-          pixels[texIdx + 2] = 30;
+      for (let y = 0; y < texH; y++) {
+        for (let x = 0; x < texW; x++) {
+          const srcX = Math.floor((x / texW) * width);
+          const srcY = Math.floor((y / texH) * height);
+          const srcIdx = srcY * width + srcX;
+          const elev = elevations[srcIdx];
+          const texIdx = (y * texW + x) * 4;
+
+          if ((noDataValue !== null && elev === noDataValue) || !isFinite(elev)) {
+            pixels[texIdx] = 20;
+            pixels[texIdx + 1] = 20;
+            pixels[texIdx + 2] = 30;
+            pixels[texIdx + 3] = 255;
+            continue;
+          }
+
+          const t = (elev - this.minElev) / range;
+          const [r, g, b] = rampFn(t);
+          pixels[texIdx] = r;
+          pixels[texIdx + 1] = g;
+          pixels[texIdx + 2] = b;
           pixels[texIdx + 3] = 255;
-          continue;
         }
-
-        const t = (elev - this.minElev) / range;
-        const [r, g, b] = rampFn(t);
-        pixels[texIdx] = r;
-        pixels[texIdx + 1] = g;
-        pixels[texIdx + 2] = b;
-        pixels[texIdx + 3] = 255;
       }
     }
 
@@ -195,6 +215,65 @@ export class TerrainModule implements SceneModule {
     this.texture.magFilter = THREE.LinearFilter;
     this.material.map = this.texture;
     this.material.needsUpdate = true;
+  }
+
+  private getElevAt(x: number, y: number): number {
+    const data = this.currentData!;
+    const cx = Math.max(0, Math.min(data.width - 1, x));
+    const cy = Math.max(0, Math.min(data.height - 1, y));
+    const v = data.elevations[cy * data.width + cx];
+    if (data.noDataValue !== null && v === data.noDataValue) return this.minElev;
+    if (!isFinite(v)) return this.minElev;
+    return v;
+  }
+
+  private renderSlopeAspect(pixels: Uint8Array, texW: number, texH: number, isAspect: boolean): void {
+    const data = this.currentData!;
+    const { width, height } = data;
+
+    for (let ty = 0; ty < texH; ty++) {
+      for (let tx = 0; tx < texW; tx++) {
+        const sx = Math.floor((tx / texW) * width);
+        const sy = Math.floor((ty / texH) * height);
+        const texIdx = (ty * texW + tx) * 4;
+
+        const z1 = this.getElevAt(sx - 1, sy - 1);
+        const z2 = this.getElevAt(sx, sy - 1);
+        const z3 = this.getElevAt(sx + 1, sy - 1);
+        const z4 = this.getElevAt(sx - 1, sy);
+        const z6 = this.getElevAt(sx + 1, sy);
+        const z7 = this.getElevAt(sx - 1, sy + 1);
+        const z8 = this.getElevAt(sx, sy + 1);
+        const z9 = this.getElevAt(sx + 1, sy + 1);
+
+        const dzdx = ((z3 + 2 * z6 + z9) - (z1 + 2 * z4 + z7)) / 8;
+        const dzdy = ((z7 + 2 * z8 + z9) - (z1 + 2 * z2 + z3)) / 8;
+        const slopeRad = Math.atan(Math.sqrt(dzdx * dzdx + dzdy * dzdy));
+
+        if (isAspect) {
+          if (slopeRad < 0.01) {
+            pixels[texIdx] = 180;
+            pixels[texIdx + 1] = 180;
+            pixels[texIdx + 2] = 180;
+          } else {
+            let aspectDeg = (Math.atan2(-dzdy, dzdx) * 180 / Math.PI + 360) % 360;
+            const hue = aspectDeg / 360;
+            const [r, g, b] = hslToRgb(hue, 0.7, 0.55);
+            pixels[texIdx] = r;
+            pixels[texIdx + 1] = g;
+            pixels[texIdx + 2] = b;
+          }
+        } else {
+          const slopeDeg = slopeRad * 180 / Math.PI;
+          const t = Math.min(1, slopeDeg / 60);
+          const v = Math.floor(255 * (1 - t * 0.85));
+          pixels[texIdx] = v;
+          pixels[texIdx + 1] = v;
+          pixels[texIdx + 2] = v;
+        }
+        pixels[texIdx + 3] = 255;
+      }
+    }
   }
 
   private clearTerrain(): void {
@@ -324,3 +403,25 @@ const COLOR_RAMPS: Record<ColorRampName, (t: number) => [number, number, number]
       t
     ),
 };
+
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  let r: number, g: number, b: number;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number): number => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}

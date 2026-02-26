@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { loadRasterFile } from "./geo/loader";
 import type { RasterInfo } from "./geo/loader";
 import type { TerrainData, ColorRampName } from "./three/modules/TerrainModule";
@@ -7,6 +7,15 @@ import { Viewport } from "./components/Viewport";
 import type { ViewportHandle } from "./components/Viewport";
 import { LeafletMap } from "./components/LeafletMap";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ProfileTool } from "./components/ProfileTool";
+import { generateSampleTerrain } from "./geo/sampleTerrain";
+import { parseUrlState, useUrlStateSync } from "./hooks/useUrlState";
+
+interface ProfilePoint {
+  x: number;
+  y: number;
+  z: number;
+}
 
 const RAMP_OPTIONS: { value: ColorRampName; label: string }[] = [
   { value: "terrain", label: "Terrain" },
@@ -14,6 +23,8 @@ const RAMP_OPTIONS: { value: ColorRampName; label: string }[] = [
   { value: "magma", label: "Magma" },
   { value: "arctic", label: "Arctic" },
   { value: "desert", label: "Desert" },
+  { value: "slope", label: "Slope" },
+  { value: "aspect", label: "Aspect" },
 ];
 
 const BASEMAP_OPTIONS: { value: string; label: string }[] = [
@@ -24,6 +35,16 @@ const BASEMAP_OPTIONS: { value: string; label: string }[] = [
   { value: "ShadedRelief", label: "Shaded Relief" },
   { value: "DarkGray", label: "Dark Gray" },
   { value: "Streets", label: "Esri Streets" },
+];
+
+const KEYBOARD_SHORTCUTS = [
+  { key: "1-7", desc: "Select color ramp" },
+  { key: "W", desc: "Toggle wireframe" },
+  { key: "R", desc: "Reset camera" },
+  { key: "+/-", desc: "Adjust exaggeration" },
+  { key: "S", desc: "Screenshot" },
+  { key: "P", desc: "Profile tool" },
+  { key: "?", desc: "Toggle this help" },
 ];
 
 function downloadBlob(data: string, filename: string, mime: string) {
@@ -43,6 +64,8 @@ function downloadDataUrl(dataUrl: string, filename: string) {
   a.click();
 }
 
+const initialUrlState = parseUrlState();
+
 export function App() {
   const [terrainData, setTerrainData] = useState<TerrainData | null>(null);
   const [info, setInfo] = useState<RasterInfo | null>(null);
@@ -50,18 +73,49 @@ export function App() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [exaggeration, setExaggeration] = useState(1.0);
-  const [colorRamp, setColorRamp] = useState<ColorRampName>("terrain");
-  const [wireframe, setWireframe] = useState(false);
+  const [exaggeration, setExaggeration] = useState(initialUrlState.exaggeration ?? 1.0);
+  const [colorRamp, setColorRamp] = useState<ColorRampName>(
+    (initialUrlState.colorRamp as ColorRampName) ?? "terrain"
+  );
+  const [wireframe, setWireframe] = useState(initialUrlState.wireframe ?? false);
   const [elevRange, setElevRange] = useState<{ min: number; max: number } | null>(null);
-  const [basemap, setBasemap] = useState("Topographic");
+  const [basemap, setBasemap] = useState(initialUrlState.basemap ?? "Topographic");
+
+  const [profileMode, setProfileMode] = useState(false);
+  const [profileStart, setProfileStart] = useState<ProfilePoint | null>(null);
+  const [profileEnd, setProfileEnd] = useState<ProfilePoint | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const viewportRef = useRef<ViewportHandle>(null);
+
+  const hasUrlCamera = !!(initialUrlState.cam && initialUrlState.target);
+
+  useEffect(() => {
+    if (hasUrlCamera) {
+      const timer = setTimeout(() => {
+        viewportRef.current?.setCameraState(initialUrlState.cam!, initialUrlState.target!);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const getCameraState = useCallback(() => {
+    return viewportRef.current?.getCameraState() ?? null;
+  }, []);
+
+  useUrlStateSync(
+    { exaggeration, colorRamp, wireframe, basemap },
+    getCameraState
+  );
 
   const handleFileSelected = useCallback(async (file: File, companionFile?: File) => {
     setLoading(true);
     setError(null);
     setFileName(file.name);
+    setProfileStart(null);
+    setProfileEnd(null);
+    setProfileMode(false);
 
     try {
       let worldFileContent: string | undefined;
@@ -74,6 +128,27 @@ export function App() {
       setInfo(result.info);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load file";
+      setError(message);
+      setTerrainData(null);
+      setInfo(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleLoadSample = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    setFileName("sample-terrain.synthetic");
+    setProfileStart(null);
+    setProfileEnd(null);
+    setProfileMode(false);
+    try {
+      const result = generateSampleTerrain();
+      setTerrainData(result.terrain);
+      setInfo(result.info);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to generate sample";
       setError(message);
       setTerrainData(null);
       setInfo(null);
@@ -127,6 +202,81 @@ export function App() {
     downloadBlob(lines.join("\n"), `${baseName}_elevation.csv`, "text/csv");
   }, [terrainData, fileName]);
 
+  const handleCopyLink = useCallback(() => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    });
+  }, []);
+
+  const handleProfileClick = useCallback((point: ProfilePoint) => {
+    if (!profileStart) {
+      setProfileStart(point);
+      setProfileEnd(null);
+    } else if (!profileEnd) {
+      setProfileEnd(point);
+      setProfileMode(false);
+    }
+  }, [profileStart, profileEnd]);
+
+  const handleProfileClear = useCallback(() => {
+    setProfileStart(null);
+    setProfileEnd(null);
+    setProfileMode(false);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+
+      switch (e.key) {
+        case "w":
+        case "W":
+          setWireframe((v) => !v);
+          break;
+        case "r":
+        case "R":
+          viewportRef.current?.resetCamera();
+          break;
+        case "1":
+        case "2":
+        case "3":
+        case "4":
+        case "5":
+        case "6":
+        case "7": {
+          const idx = parseInt(e.key) - 1;
+          if (idx < RAMP_OPTIONS.length) {
+            setColorRamp(RAMP_OPTIONS[idx].value);
+          }
+          break;
+        }
+        case "+":
+        case "=":
+          setExaggeration((v) => Math.min(5, +(v + 0.5).toFixed(1)));
+          break;
+        case "-":
+          setExaggeration((v) => Math.max(0.1, +(v - 0.5).toFixed(1)));
+          break;
+        case "s":
+        case "S":
+          handleExportScreenshot();
+          break;
+        case "p":
+        case "P":
+          setProfileMode((v) => !v);
+          break;
+        case "?":
+          setShowShortcuts((v) => !v);
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleExportScreenshot]);
+
   const totalPixels = info ? info.width * info.height : 0;
   const elevRangeVal = elevRange ? (elevRange.max - elevRange.min) : 0;
 
@@ -141,6 +291,13 @@ export function App() {
         <div className="sidebar-section">
           <h2>Load Terrain</h2>
           <FileUpload onFileSelected={handleFileSelected} disabled={loading} />
+          <button
+            className="sample-btn"
+            onClick={handleLoadSample}
+            disabled={loading}
+          >
+            Load Sample Terrain
+          </button>
           {fileName && !loading && (
             <div className="file-name">{fileName}</div>
           )}
@@ -252,6 +409,23 @@ export function App() {
                 Wireframe Overlay
               </label>
             </div>
+
+            <div className="control-group">
+              <label className="control-label">
+                <input
+                  type="checkbox"
+                  checked={profileMode}
+                  onChange={(e) => {
+                    setProfileMode(e.target.checked);
+                    if (!e.target.checked) {
+                      setProfileStart(null);
+                      setProfileEnd(null);
+                    }
+                  }}
+                />
+                Profile Tool
+              </label>
+            </div>
           </div>
         )}
 
@@ -270,6 +444,10 @@ export function App() {
               <button className="export-btn" onClick={handleExportElevationCsv}>
                 <span className="export-icon">&#128202;</span>
                 Elevation CSV
+              </button>
+              <button className="export-btn" onClick={handleCopyLink}>
+                <span className="export-icon">&#128279;</span>
+                {linkCopied ? "Copied!" : "Copy Link"}
               </button>
             </div>
           </div>
@@ -292,8 +470,24 @@ export function App() {
               colorRamp={colorRamp}
               wireframe={wireframe}
               onElevationRange={handleElevationRange}
+              profileMode={profileMode}
+              onProfileClick={handleProfileClick}
+              skipCameraReset={hasUrlCamera}
             />
           </ErrorBoundary>
+          {terrainData && profileStart && profileEnd && (() => {
+            const bounds = viewportRef.current?.getTerrainBounds();
+            if (!bounds) return null;
+            return (
+              <ProfileTool
+                terrainData={terrainData}
+                startPoint={profileStart}
+                endPoint={profileEnd}
+                terrainBounds={bounds}
+                onClear={handleProfileClear}
+              />
+            );
+          })()}
         </div>
 
         <div className="map-panel">
@@ -318,6 +512,23 @@ export function App() {
           <div className="loading-content">
             <div className="loading-spinner-ring" />
             <div className="loading-text-large">Loading terrain...</div>
+          </div>
+        </div>
+      )}
+
+      {showShortcuts && (
+        <div className="shortcuts-overlay" onClick={() => setShowShortcuts(false)}>
+          <div className="shortcuts-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="shortcuts-title">Keyboard Shortcuts</div>
+            <div className="shortcuts-grid">
+              {KEYBOARD_SHORTCUTS.map((s) => (
+                <div className="shortcut-row" key={s.key}>
+                  <kbd className="shortcut-key">{s.key}</kbd>
+                  <span className="shortcut-desc">{s.desc}</span>
+                </div>
+              ))}
+            </div>
+            <div className="shortcuts-dismiss">Press ? to close</div>
           </div>
         </div>
       )}

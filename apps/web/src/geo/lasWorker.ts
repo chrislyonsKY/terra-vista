@@ -1,6 +1,3 @@
-import type { TerrainData } from "../three/modules/TerrainModule";
-import type { RasterInfo, LoadResult } from "./loader";
-
 interface LasHeader {
   versionMinor: number;
   pointDataRecordFormat: number;
@@ -264,140 +261,55 @@ function pointsToGrid(
   return { elevations, width, height, minX, maxX, minY, maxY };
 }
 
-function buildResult(data: {
-  elevations: Float32Array;
-  width: number;
-  height: number;
-  pixelSizeX: number;
-  pixelSizeY: number;
-  isGeographic: boolean;
-  formatLabel: string;
-  versionMinor: number;
-  numberOfPoints: number;
-  pointDataRecordFormat: number;
-  minX: number;
-  maxY: number;
-}): LoadResult {
-  const terrain: TerrainData = {
-    elevations: data.elevations,
-    width: data.width,
-    height: data.height,
-    noDataValue: null,
-  };
-
-  const info: RasterInfo = {
-    width: data.width,
-    height: data.height,
-    bandCount: 1,
-    bitsPerSample: [64],
-    pixelSizeX: data.pixelSizeX,
-    pixelSizeY: data.pixelSizeY,
-    crs: data.isGeographic ? "EPSG:4326" : null,
-    noDataValue: null,
-    originX: data.minX,
-    originY: data.maxY,
-    format: `${data.formatLabel} 1.${data.versionMinor} (${data.numberOfPoints.toLocaleString()} pts, PDRF ${data.pointDataRecordFormat} → ${data.width}x${data.height} grid)`,
-  };
-
-  return { terrain, info };
-}
-
-function loadLasViaWorker(buffer: ArrayBuffer): Promise<LoadResult> {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(
-      new URL("./lasWorker.ts", import.meta.url),
-      { type: "module" }
-    );
-
-    worker.onmessage = (e: MessageEvent) => {
-      const msg = e.data;
-      if (msg.type === "progress") {
-        return;
-      }
-      if (msg.type === "error") {
-        worker.terminate();
-        reject(new Error(msg.message));
-        return;
-      }
-      if (msg.type === "result") {
-        worker.terminate();
-        const elevations = new Float32Array(msg.elevations);
-        resolve(buildResult({
-          elevations,
-          width: msg.width,
-          height: msg.height,
-          pixelSizeX: msg.pixelSizeX,
-          pixelSizeY: msg.pixelSizeY,
-          isGeographic: msg.isGeographic,
-          formatLabel: msg.formatLabel,
-          versionMinor: msg.versionMinor,
-          numberOfPoints: msg.numberOfPoints,
-          pointDataRecordFormat: msg.pointDataRecordFormat,
-          minX: msg.minX,
-          maxY: msg.maxY,
-        }));
-      }
-    };
-
-    worker.onerror = (e) => {
-      worker.terminate();
-      reject(new Error(e.message || "Worker error"));
-    };
-
-    worker.postMessage(buffer, [buffer]);
-  });
-}
-
-async function loadLasSynchronous(buffer: ArrayBuffer): Promise<LoadResult> {
-  const header = parseLasHeader(new DataView(buffer));
-
-  if (header.numberOfPoints === 0) {
-    throw new Error("LAS/LAZ file contains no points");
-  }
-
-  let points: { xs: Float64Array; ys: Float64Array; zs: Float64Array };
-
-  if (header.isLaz) {
-    points = await extractPointsLaz(buffer, header);
-  } else {
-    points = extractPointsUncompressed(buffer, header);
-  }
-
-  const { xs, ys, zs } = points;
-  const gridRes = Math.min(512, Math.ceil(Math.sqrt(xs.length / 2)));
-  const grid = pointsToGrid(xs, ys, zs, Math.max(64, gridRes));
-
-  const pixelSizeX = (grid.maxX - grid.minX) / (grid.width - 1 || 1);
-  const pixelSizeY = (grid.maxY - grid.minY) / (grid.height - 1 || 1);
-
-  const isGeographic =
-    grid.minX >= -180 && grid.maxX <= 180 && grid.minY >= -90 && grid.maxY <= 90;
-
-  const formatLabel = header.isLaz ? "LAZ" : "LAS";
-
-  return buildResult({
-    elevations: grid.elevations,
-    width: grid.width,
-    height: grid.height,
-    pixelSizeX,
-    pixelSizeY,
-    isGeographic,
-    formatLabel,
-    versionMinor: header.versionMinor,
-    numberOfPoints: header.numberOfPoints,
-    pointDataRecordFormat: header.pointDataRecordFormat,
-    minX: grid.minX,
-    maxY: grid.maxY,
-  });
-}
-
-export async function loadLasFile(file: File): Promise<LoadResult> {
-  const buffer = await file.arrayBuffer();
-
+self.onmessage = async (e: MessageEvent) => {
   try {
-    return await loadLasViaWorker(buffer);
-  } catch (_workerErr) {
-    const fallbackBuffer = await file.arrayBuffer();
-    return loadLasSynchronous(fallbackBuffer);
+    const buffer: ArrayBuffer = e.data;
+
+    self.postMessage({ type: "progress", message: "parsing header" });
+    const header = parseLasHeader(new DataView(buffer));
+
+    if (header.numberOfPoints === 0) {
+      throw new Error("LAS/LAZ file contains no points");
+    }
+
+    self.postMessage({ type: "progress", message: "extracting points" });
+    let points: { xs: Float64Array; ys: Float64Array; zs: Float64Array };
+
+    if (header.isLaz) {
+      points = await extractPointsLaz(buffer, header);
+    } else {
+      points = extractPointsUncompressed(buffer, header);
+    }
+
+    self.postMessage({ type: "progress", message: "gridding" });
+    const { xs, ys, zs } = points;
+    const gridRes = Math.min(512, Math.ceil(Math.sqrt(xs.length / 2)));
+    const grid = pointsToGrid(xs, ys, zs, Math.max(64, gridRes));
+
+    const pixelSizeX = (grid.maxX - grid.minX) / (grid.width - 1 || 1);
+    const pixelSizeY = (grid.maxY - grid.minY) / (grid.height - 1 || 1);
+
+    const isGeographic =
+      grid.minX >= -180 && grid.maxX <= 180 && grid.minY >= -90 && grid.maxY <= 90;
+
+    const formatLabel = header.isLaz ? "LAZ" : "LAS";
+
+    self.postMessage({
+      type: "result",
+      elevations: grid.elevations.buffer,
+      width: grid.width,
+      height: grid.height,
+      pixelSizeX,
+      pixelSizeY,
+      isGeographic,
+      formatLabel,
+      versionMinor: header.versionMinor,
+      numberOfPoints: header.numberOfPoints,
+      pointDataRecordFormat: header.pointDataRecordFormat,
+      minX: grid.minX,
+      maxY: grid.maxY,
+    }, [grid.elevations.buffer] as any);
+  } catch (err: any) {
+    self.postMessage({ type: "error", message: err?.message || String(err) });
   }
-}
+};
